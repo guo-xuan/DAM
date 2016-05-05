@@ -3,11 +3,10 @@
 // Author      : Xuan Guo
 // Version     :
 // Copyright   : Your copyright notice
-// Description : Hello World in C++, Ansi-style
+// Description : Genome-wide Association Mapping for Multiple Groups/Populations
 //============================================================================
 
 #include <iostream>
-#include <omp.h>
 
 //DAM header
 #include "Config.h"

@@ -11,6 +11,10 @@
 // C headers:
 #include <stdlib.h>
 #include <stdio.h>
+#include <memory.h>
+#include <math.h>
+#include <time.h>
+#include <sys/stat.h>
 
 // C++ headers:
 #include <vector>
@@ -20,6 +24,16 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <iomanip>
+#include <algorithm>
+#include <numeric>
+#include <utility>
+#include <limits>
+#include <cstdlib>
+#include <fstream>
+#include <streambuf>
+#include <map>
+#include <exception>
 
 using namespace std;
 
