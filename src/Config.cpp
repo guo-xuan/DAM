@@ -19,6 +19,9 @@ vector<string> Config::vsInputVariantFiles;
 string Config::sOutputFolder = "";
 UINT32 Config::iNumVariants = 0;
 UINT32 Config::iNumGroups = 0;
+UINT32 Config::iNumChains = 1;
+double Config::iNumIndependentVariants = 5;
+double Config::iNumDependentVariants = 5;
 
 void Config::printHelp() {
 

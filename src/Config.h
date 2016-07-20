@@ -51,6 +51,9 @@ public:
 	static string sOutputFolder;
 	static UINT32 iNumVariants;
 	static UINT32 iNumGroups;
+	static UINT32 iNumChains;
+	static double iNumIndependentVariants;
+	static double iNumDependentVariants;
 
 	Config();
 	virtual ~Config();

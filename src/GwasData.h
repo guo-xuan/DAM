@@ -12,28 +12,41 @@
 
 class GwasData {
 public:
-	vector<string*> vsChromsomeNames;
-	vector<UINT16> viVariantChromsomeList;
+	vector<string> vsChromsomeNamesSet;
+	vector<UINT8> viVariantChromsomeNameList;
 	vector<UINT32> viVariantPositionList;
 	vector<string> vsVariantNameList;
 
 	UINT32 iNumVariants;
-	UINT32 iNumSamples;
+	UINT32 iNumTotalSamplesAcrossGroups;
 	UINT32 iNumGroups;
-	vector<string> viSampleNamesList;
+	vector<string> viGroupNamesSet;
 	vector<UINT32> viGroupSizeList;
 	vector<UINT8> viNumVariantTypesList;
-	vector<UINT32**> vmDataMatrix;
+	// group -> variants -> variant type -> frequency
+	vector<vector<UINT32*> *> vviVariantFrequence;
+	// For each variant, the # samples using 32 bits
+	vector<UINT8> viNumSamples32Bits;
+	// For each variant, the # 32 bits for each group
+	vector<UINT16*> viSampleVectorSizePerGroup;
+	// UINT32** is data for each group
+	vector<UINT32**> vmDataMatrix; //row variant; column samples
+	UINT32 ** miPower; //base exponent
 
 	static char cDelim;
+	static UINT32 iMissingData;
+	static UINT32 iLogMaxInteger;
+	static UINT32 iChunkSize;
 
 	GwasData();
 	~GwasData();
 
-	bool loadBasicInfo(vector<string> & _vsInputFileList);
-	void readInput(vector<string> & _vsInputFileList);
-	bool variantControl(vector<string> & _vsList);
 	UINT32 getValue(UINT32 _iVariantIndex, UINT32 _iSampleIndex);
+	void getValue(UINT32 _iVariantIndex, UINT32 _iGroupIndex, vector<UINT32> & _vi);
+	bool loadBasicInfo(vector<string> & _vsInputFileList);
+	bool loadDataParallel(vector<string> & _vsInputFileList);
+	void readInput(vector<string> & _vsInputFileList);
+	void writeOutput(string &_sFilename);
+	void writeOutput(string &_sFilename, vector<UINT32> _viVariantList);
 };
-
 #endif /* GWASDATA_H_ */
