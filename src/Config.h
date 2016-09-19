@@ -54,6 +54,7 @@ public:
 	static UINT32 iNumChains;
 	static double iNumIndependentVariants;
 	static double iNumDependentVariants;
+	static UINT32 iMaxVariants;
 
 	Config();
 	virtual ~Config();

@@ -23,34 +23,40 @@ bool setConfiguration(GwasData * gwasData) {
 	MCMC::iNumBurnins = MCMC::iNumVariants * 400;
 	MCMC::iNumIterations = MCMC::iNumVariants * (MCMC::iNumVariants > 100000 ? 100000 : MCMC::iNumVariants);
 	MCMC::setupMCMC(Config::iNumIndependentVariants, Config::iNumDependentVariants);
+	MCMC::gwasData = gwasData;
 	return true;
 }
 
 int main(int argc, char **argv) {
 
 	// parse command line options:
-	if (!Config::setConfig(argc, argv)) {
+	if(!Config::setConfig(argc, argv)) {
 		cout << "Please follow the above help information." << endl;
 		return false;
 	}
 
 	GwasData * gwasData = new GwasData();
 	gwasData->readInput(Config::vsInputVariantFiles);
+	// set the gwas data in the config and also MCMC
 	setConfiguration(gwasData);
+
 	//string sFileOut = "test.txt";
 	//gwasData->writeOutput(sFileOut);
-	//create chains
+
+	// create chains
 	vector<MCMC *> vMcmc;
-	for (size_t i = 0; i < Config::iNumChains; i++) {
+	for(size_t i = 0;i < Config::iNumChains;i++) {
 		MCMC * pMcmc = new MCMC();
+		pMcmc->initilizeMCMC();
 		vMcmc.push_back(pMcmc);
 	}
 	//run chains
 
 	//free memory
 	delete gwasData;
-	for (size_t i = 0; i < Config::iNumChains; i++) {
+	for(size_t i = 0;i < Config::iNumChains;i++) {
 		delete vMcmc.at(i);
 	}
+	MCMC::destroyMCMC();
 	return 0;
 }

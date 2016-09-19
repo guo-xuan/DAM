@@ -22,6 +22,7 @@ UINT32 Config::iNumGroups = 0;
 UINT32 Config::iNumChains = 1;
 double Config::iNumIndependentVariants = 5;
 double Config::iNumDependentVariants = 5;
+UINT32 Config::iMaxVariants = 20;
 
 void Config::printHelp() {
 

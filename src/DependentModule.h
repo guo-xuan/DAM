@@ -10,13 +10,16 @@
 
 #include "Config.h"
 #include "HashTable.h"
+#include "GwasData.h"
 
 class DependentModule {
 public:
 
+	double dPosteriorProbability;
+
 	HashTable * pHashTable;
 	HashTable * pHashTableBackup;
-	vector<vector<UINT32>> vvGroupInfo;
+	vector<vector<int>> vvGroupInfo;
 
 	//1D: group, 2D: sample, 3D: variant
 	vector<char*> vcGwasData;
@@ -29,15 +32,25 @@ public:
 	GwasData * pGwasData;
 	vector<UINT32> * viGroupSizeList;
 
-	DependentModule(UINT32 _nMaxVariantAllowed, GwasData * GwasData, vector<vector<UINT32>> _vvGroupInfo);
+	// string implementation
+	vector<UINT32> viNumCounts;
+	UINT32 iNextAvailableCounts;
+	vector<vector<string>> vvsVariants;
+	map<string, UINT32> msuHashTable;
+	vector<UINT32> viTemp;
+	map<string, UINT32>::iterator it;
+
+	DependentModule(UINT32 _nMaxVariantAllowed, GwasData * GwasData, vector<vector<int>> _vvGroupInfo);
 	~DependentModule();
 
 	bool addVariants(vector<UINT32> & _viOuterIndex);
-	bool delVariants(vector<UINT32> & _viInnerIndex);
-	bool replaceVariants(vector<UINT32> & _viInnerIndex, vector<UINT32> & _viOuterIndex);
 	bool apply();
-	bool rollBack();
+	void cleanHashtable();
+	void cleanVariants();
+	bool delVariants(vector<UINT32> & _viInnerIndex);
 	double getPosterior();
+	bool replaceVariants(vector<UINT32> & _viInnerIndex, vector<UINT32> & _viOuterIndex);
+	bool rollBack();
 };
 
 #endif /* DEPENDENTMODULE_H_ */

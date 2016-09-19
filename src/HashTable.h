@@ -10,84 +10,43 @@
 
 #include "Config.h"
 
-struct KeyValue {
-	static UINT32 iNumGroups;
-	UINT64 * piKey;
-	UINT32 iPiSize;
-	UINT32 * iFrequency;
-
-	KeyValue(UINT32 _nKey) {
-		piKey = new UINT64[_nKey];
-		iPiSize = 0;
-		iFrequency = new UINT32[iNumGroups];
-	}
-
-	~KeyValue() {
-		delete[] iFrequency;
-		delete[] piKey;
-	}
-
-	KeyValue* operator=(const KeyValue& _a) {
-		iPiSize = _a.iPiSize;
-		for (size_t i = 0; i < iNumGroups; i++) {
-			iFrequency[i] = _a.iFrequency[i];
-		}
-		for (size_t i = 0; i < iPiSize; i++) {
-			piKey[i] = _a.piKey[i];
-		}
-		return this;
-	}
-
-	bool compare(const UINT64* _piKey, UINT32 _iPiSize) {
-		if (iPiSize != _iPiSize) {
-			return false;
-		}
-		for (size_t i = 0; i < iPiSize; i++) {
-			if (piKey[i] != _piKey[i]) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	void clean() {
-		iPiSize = 0;
-		for (size_t i = 0; i < iNumGroups; i++) {
-			iFrequency[i] = 0;
-		}
-	}
-
-	void set(UINT64 * _piKey, UINT32 _iPiSize) {
-		for (size_t i = 0; i < _iPiSize; i++) {
-			piKey[i] = _piKey[i];
-		}
-		iPiSize = _iPiSize;
-	}
-};
-
 class HashTable {
 public:
+
+	static char EMPTY;
+
 	UINT32 iKeySize; //number of integers in a key
-	vector<KeyValue *> *vkTable;
-	vector<UINT32> *viSet;
-	UINT32 iSetSize;
-	UINT32 iHashCode;
-	size_t i;
-	size_t j;
-	size_t k;
-	KeyValue * pKeyValue;
+	vector<UINT32> viGroupsSize;
+	char ** ppcData;
+	char * pcHashTable;
+	UINT32 * piCount;
+	UINT32 iNumGroups;
+	UINT32 iTotalSamples;
 	UINT32 iHashTableSize;
 	UINT32 iHashTableSizeMinusOne;
+	UINT32 iNumVariants;
+	UINT32 iHashCode;
+	UINT32 i;
+	UINT32 j;
+	UINT32 k;
+	bool bEqual;
+	vector<UINT32> viSet;
 
-	HashTable(UINT32 _iKeySize, UINT32 _iSampleSize, UINT32 _iNumGroups);
+	// vector<vector<char>> vvcData;
+	// vector<char> vcHashTable;
+	// vector<UINT32> viCount;
+
+	HashTable(UINT32 _iKeySize, UINT32 _iTotalSamples, UINT32 _iNumGroups, vector<UINT32> & _viGroupsSize);
 	~HashTable();
-
+	void add(UINT32 _iInnerIndex, UINT32 _iGroupIndex, vector<UINT32> & _viData);
 	void clean();
-	UINT32 extract(vector<vector<UINT32>> & _vviN, vector<vector<double>> & _vvdPrior,
-			vector<vector<UINT32>> & _vGroupSet, vector<vector<UINT32*>> _vviVariantFrequence);
-	UINT32 hashCode(UINT64 * _piKey, UINT32 _iPiSize);
-	void operator=(const HashTable & _a);
-	UINT32 push(UINT64 * _piKey, UINT32 _iPiSize);
+	void copyFrom(HashTable & _hashtable);
+	void del(UINT32 _iInnerIndex);
+	void extract(vector<vector<UINT32>> & _vviHyperGroup, vector<UINT32> & _viCount);
+	void hashing();
+	void replace(UINT32 _iInnerIndex, UINT32 _iGroupIndex, vector<UINT32> & _viData);
+	void setNumVariants(UINT32 _iNumVariants);
+
 };
 
 #endif /* HASHTABLE_H_ */
