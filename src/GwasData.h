@@ -17,6 +17,7 @@ public:
 	UINT32 iNumVariants;
 	UINT32 iNumTotalSamplesAcrossGroups;
 	UINT32 iNumGroups;
+	UINT32 iNumVariantTypes;
 	// number of samples in each group
 	vector<UINT32> viNumSamplesPerGroup;
 	// group index for each sample
@@ -26,10 +27,10 @@ public:
 
 	vector<string> viGroupNamesSet;
 
+	map<string, UINT32> msiChromsomeIndex;
+
 	// the genotype counts for each variant
 	vector<UINT8> viNumVariantTypes;
-	// group -> variants -> variant type -> frequency
-	vector<vector<UINT32*> *> vviVariantFrequence;
 
 	static char cDelim;
 	static UINT32 iChunkSize;
@@ -38,15 +39,17 @@ public:
 	~GwasData();
 
 	void getValue(UINT32 _iVariantIndex, UINT32 _iGroupIndex, vector<UINT32> & _vi);
-	void getVariantFrequency(UINT32 _iVariantIndex, vector<int> & _viGroups, vector<UINT32> & _viFrequency);
+	UINT32 getVariantChromsome(UINT32 _iVariantIndex);
 	vector<vector<vector<double>>> * getVariantHyperGroupFrequency(UINT32 _iVariantIndex);
 	vector<vector<vector<UINT32>>> * getVariantHyperGroupOccurrence(UINT32 _iVariantIndex);
-	UINT32 getVairantNumTypes(UINT32 _iVariantIndex);
+	UINT32 getVariantNumTypes();
+	UINT32 getVariantNumTypes(UINT32 _iVariantIndex);
+	int getVariantPosition(UINT32 _iVariantIndex);
 	bool loadBasicInfo(vector<string> & _vsInputFileList);
 	bool loadDataParallel(vector<string> & _vsInputFileList);
 	void readInput(vector<string> & _vsInputFileList);
 	void setVariantHyperFrequency(UINT32 _iVariantIndex, const vector<vector<vector<int>>>& _vvviHyperGroupInfo);
-	void writeOutput(string &_sFilename);
+	void writeOutput(string &_sFilename, const map<string, UINT32> & msiChromsomeIndex);
 	void writeOutput(string &_sFilename, vector<UINT32> _viVariantList);
 };
 #endif /* GWASDATA_H_ */

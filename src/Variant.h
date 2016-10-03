@@ -19,7 +19,8 @@ public:
 	static UINT32 ** miPower; //base exponent
 	static vector<UINT32> viNumSamplePerGroup;
 
-	string sChromsomeName;
+	// string sChromsomeName;
+	UINT32 iChromsomeNameIndex;
 	string sVariantName;
 	UINT32 iVariantPosition;
 
@@ -34,10 +35,10 @@ public:
 	vector<vector<vector<double>>> * getHyperGroupFrequency();
 	vector<vector<vector<UINT32>>> * getHyperGroupOccurrence();
 	void setData(const string & _sLine, char _delim, const vector<UINT32> & _viNumSamplePerGroup,
-			const vector<UINT32> & _viSampleGroupInfo);
+			const vector<UINT32> & _viSampleGroupInfo, const map<string, UINT32> & msiChromsomeIndex);
 	void setData(const string & _sLine, char _delim, const vector<UINT32> & _viNumSamplePerGroup,
 			const vector<UINT32> & _viSampleGroupInfo, vector<UINT32>& _vector, map<UINT32, UINT32> & _mii,
-			vector<UINT32> & _viGroupCount);
+			vector<UINT32> & _viGroupCount, const map<string, UINT32> & msiChromsomeIndex);
 	void setFrequency(const vector<vector<vector<int>>> & _vvviHyperGroupInfo);
 
 private:

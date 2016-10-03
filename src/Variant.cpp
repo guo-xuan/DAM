@@ -57,16 +57,16 @@ vector<vector<vector<UINT32>>>* Variant::getHyperGroupOccurrence() {
 }
 
 void Variant::setData(const string & _sLine, char _delim, const vector<UINT32> & _viNumSamplePerGroup,
-		const vector<UINT32> & _viSampleGroupInfo) {
+		const vector<UINT32> & _viSampleGroupInfo, const map<string, UINT32> & msiChromsomeIndex) {
 	vector<UINT32> _vector;
 	map<UINT32, UINT32> _mii;
 	vector<UINT32> _viGroupCount;
-	setData(_sLine, _delim, _viNumSamplePerGroup, _viSampleGroupInfo, _vector, _mii, _viGroupCount);
+	setData(_sLine, _delim, _viNumSamplePerGroup, _viSampleGroupInfo, _vector, _mii, _viGroupCount, msiChromsomeIndex);
 }
 
 void Variant::setData(const string & _sLine, char _delim, const vector<UINT32> & _viNumSamplePerGroup,
 		const vector<UINT32> & _viSampleGroupInfo, vector<UINT32> & _vector, map<UINT32, UINT32> & _mii,
-		vector<UINT32> & _viGroupCount) {
+		vector<UINT32> & _viGroupCount, const map<string, UINT32> & msiChromsomeIndex) {
 	_vector.clear();
 	_mii.clear();
 	_viGroupCount.resize(_viNumSamplePerGroup.size());
@@ -77,7 +77,7 @@ void Variant::setData(const string & _sLine, char _delim, const vector<UINT32> &
 	sVariantName = _sLine.substr(i, pos - i);
 	i = ++pos;
 	pos = _sLine.find(_delim, pos);
-	sChromsomeName = _sLine.substr(i, pos - i);
+	iChromsomeNameIndex = msiChromsomeIndex.at(_sLine.substr(i, pos - i));
 	i = ++pos;
 	pos = _sLine.find(_delim, pos);
 	iVariantPosition = atoi(_sLine.substr(i, pos - i).c_str());

@@ -14,6 +14,8 @@
 #include "GwasData.h"
 #include "IndependentModule.h"
 #include <stdlib.h>
+#include <random>
+#include <iostream>
 
 class MCMC {
 public:
@@ -22,21 +24,27 @@ public:
 
 	//only this array has index larger than Hyper Group Types
 	char * acAssociationTypesForAllVariants;
+	bool * abSelectedStatusForAllVariants;
 	map<char, DependentModule*> mcpDependentAssociation;
 	/**
 	 * Level 1: association type
 	 * Level 2: ids of variants with that association type
 	 */
-	vector<vector<UINT32>> vviIndependentVariants;
-	int** iFrequencyForAllVairants;
+	// vector<vector<UINT32>> vviIndependentVariants;
+	vector<UINT32> viIndependentVariants;
+	UINT32* iFrequencyForAllVairants;
 
-	static int iNumBurnins;
-	static int iNumIterations;
-	static int iNumVariants;
-	static int iNumGroups;
+	static UINT64 iNumBurnins;
+	static UINT64 iNumIterations;
+	static UINT32 iNumVariants;
+	static UINT32 iNumGroups;
+	static UINT32 iNumTotalSamples;
+	static UINT32 iVariantTypes;
+	static UINT64 STEP;
 	// {{1,2},{3}}
 	static vector<vector<vector<int>>> vvviHyperGroup;
-	static int iNumHyperGroupTypes;
+	// number of hyper group types: 3 groups, 5 hyper group types
+	static UINT32 iNumHyperGroupTypes;
 	static GwasData * gwasData;
 	/**
 	 * log(prior), the index 0 is the one showing no group difference
@@ -47,14 +55,31 @@ public:
 	// the posterior probability for each variant
 	static IndependentModule * oIndependentModule;
 	// user-defined number of independent variants
-	static UINT32 iNumIndependentVariants;
+	static UINT32 iPriorNumIndependentVariants;
 	// user-defined number of dependent Variants
-	static UINT32 iNumDependentVariants;
+	static UINT32 iPriorNumDependentVariants;
 	// number maximum dependent variants
 	static UINT32 iMaxVariants;
 
 	double dLogPosterior;
+
+	static bool destroyMCMC();
+	bool initilizeMCMC();
+	bool isConveraged();
+	void recordFrequency();
+	bool runMCMC();
+	static bool setupMCMC(GwasData * _gwasData);
+	bool test();
+	bool updateDependentIndependent(double _p0, double _p1, double _p2, double _T, UINT32 _iMinDependentVariants);
+	bool updateDependentIntra(double _T);
+	bool updateDependentNoise(double _p0, double _p1, double _p2, double _T, UINT32 _iMinDependentVariants);
+	bool updateIndependentIntra(double _T);
+	bool updateIndependentNoise(double _p0, double _p1, double _p2, double _T);
+
+private:
+
 	double dTemperature;
+	double dPosterior;
 	double dProbabilitySwitch;
 	double dProbabilitySwitchIn;
 	double dProbabilitySwitchOut;
@@ -64,16 +89,49 @@ public:
 	double dProbabilityUpdateIndependentIntra;
 	double dProbabilityUpdateIndependentNoise;
 
-	static bool destroyMCMC();
-	bool initilizeMCMC();
-	bool isConveraged();
-	bool runMCMC();
-	static bool setupMCMC(double _iNumPriorIndependentVariants, double _iNumPriorDependentVariants);
-	bool updateDependentIndependent();
-	bool updateDependentIntra();
-	bool updateDependentNoise();
-	bool updateIndependentIntra();
-	bool updateIndependentNoise();
+	UINT32 iIndexTypeDependentAssoication;
+	UINT32 iIndexTypeDependentAssoicationSwitch;
+	UINT32 iNumSelectVariants;
+	UINT32 iNumSelectVariantsSwitch;
+	UINT32 iNumRestVariants;
+	UINT32 iNumNewTotalVariants;
+	UINT32 iSelectedVariantInner;
+	UINT32 iSelectedVariantInnerSwitch;
+	UINT32 iSelectedVariantOuter;
+	UINT32 iSelectedVariantOuterSwitch;
+	double dProbabilityMove;
+	double dPosteriorDifference;
+	double dProbabilityRandom;
+	vector<UINT32> viInnerSelectedVariantIds;
+	vector<UINT32> viInnerSelectedVariantIdsSwitch;
+	vector<UINT32> viOuterSelectedVariantIds;
+	vector<UINT32> viOuterSelectedVariantIdsSwitch;
+	vector<UINT32> viOuterUnselectedVariantIds;
+	vector<UINT32> viShuffleSelect;
+	vector<char> vcAssociationTypes;
+
+	UINT32 iNumLimitDependentVariants;
+	UINT32 iNumTrueLimit;
+
+	double logratio;
+
+	UINT32 iNumDependentVariants;
+	UINT32 iNumIndependentVariants;
+
+	uniform_real_distribution<double> distribution;
+	default_random_engine generator;
+	double dRandomNumber;
+
+	DependentModule* pDependentModule;
+	DependentModule* pDependentModuleSwitch;
+
+	int iMiniDistance;
+
+	bool isTooClose(UINT32 _iOuterId, vector<UINT32> _viSelectedVariants);
+	double get_random_number();
+	UINT32 get_random_number(UINT32 _iMax);
+	void shuffleSelect(vector<UINT32> & _viShuffleSelect, UINT32 _iNumSelect, vector<UINT32> & _viInnerSelectedVariantIds);
+	void shuffleSelect(UINT32 _iNum, UINT32 _iNumSelect, vector<UINT32> & _viInnerSelectedVariantIds);
 
 };
 

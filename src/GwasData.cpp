@@ -14,29 +14,23 @@ GwasData::GwasData() {
 	iNumVariants = 0;
 	iNumGroups = 0;
 	iNumTotalSamplesAcrossGroups = 0;
+	iNumVariantTypes = 0;
 }
 
 GwasData::~GwasData() {
 
-	for (size_t i = 0; i < vviVariantFrequence.size(); i++) {
-		for (size_t j = 0; j < vviVariantFrequence.at(i)->size(); j++) {
-			delete[] vviVariantFrequence.at(i)->at(j);
-		}
-		vviVariantFrequence.at(i)->clear();
-		delete vviVariantFrequence.at(i);
-	}
 }
 
 void split(const string& sLine, char delim, vector<string>& _vector) {
 	size_t i = 0;
 	size_t pos = sLine.find(delim);
 	_vector.clear();
-	while (pos != string::npos) {
+	while(pos != string::npos) {
 		_vector.push_back(sLine.substr(i, pos - i));
 		i = ++pos;
 		pos = sLine.find(delim, pos);
 
-		if (pos == string::npos)
+		if(pos == string::npos)
 			_vector.push_back(sLine.substr(i, sLine.length()));
 	}
 }
@@ -48,20 +42,20 @@ bool split(const string& sLine, char delim, int _iSeperatePos, vector<string> & 
 	_viValueList.clear();
 	_vsVariantInfoList.clear();
 	int iCount = 0;
-	for (; iCount < _iSeperatePos; iCount++) {
+	for(;iCount < _iSeperatePos;iCount++) {
 		_vsVariantInfoList.push_back(sLine.substr(i, pos - i));
 		i = ++pos;
 		pos = sLine.find(delim, pos);
-		if (pos == string::npos) {
+		if(pos == string::npos) {
 			return false;
 		}
 	}
-	while (pos != string::npos) {
+	while(pos != string::npos) {
 		_viValueList.push_back(stoi(sLine.substr(i, pos - i)));
 		i = ++pos;
 		pos = sLine.find(delim, pos);
 	}
-	if (pos == string::npos) {
+	if(pos == string::npos) {
 		_viValueList.push_back(stoi(sLine.substr(i, sLine.length())));
 	}
 	return true;
@@ -71,16 +65,8 @@ void GwasData::getValue(UINT32 _iVariantIndex, UINT32 _iGroupIndex, vector<UINT3
 	vvData.at(_iVariantIndex).getDataInGroup(_iGroupIndex, _vi);
 }
 
-void GwasData::getVariantFrequency(UINT32 _iVariantIndex, vector<int> & _viGroups, vector<UINT32> & _viFrequency){
-	UINT32 iFrequency = 0;
-	_viFrequency.clear();
-	for(UINT32 i = 0; i<viNumVariantTypes.at(_iVariantIndex);i++){
-		iFrequency = 0;
-		for(UINT32 j=0;j<_viGroups.size();j++){
-			iFrequency += ((vviVariantFrequence.at(_viGroups.at(j)))->at(_iVariantIndex))[i];
-		}
-		_viFrequency.push_back(iFrequency);
-	}
+UINT32 GwasData::getVariantChromsome(UINT32 _iVariantIndex) {
+	return vvData.at(_iVariantIndex).iChromsomeNameIndex;
 }
 
 /**
@@ -88,7 +74,7 @@ void GwasData::getVariantFrequency(UINT32 _iVariantIndex, vector<int> & _viGroup
  * Level 2: hyper group index
  * Level 3: frequency of a variant type
  */
-vector<vector<vector<double>>> * GwasData::getVariantHyperGroupFrequency(UINT32 _iVariantIndex){
+vector<vector<vector<double>>>* GwasData::getVariantHyperGroupFrequency(UINT32 _iVariantIndex) {
 	return vvData.at(_iVariantIndex).getHyperGroupFrequency();
 }
 
@@ -97,12 +83,20 @@ vector<vector<vector<double>>> * GwasData::getVariantHyperGroupFrequency(UINT32 
  * Level 2: hyper group index
  * Level 3: occurrence of a variant type
  */
-vector<vector<vector<UINT32>>> * GwasData::getVariantHyperGroupOccurrence(UINT32 _iVariantIndex){
+vector<vector<vector<UINT32>>>* GwasData::getVariantHyperGroupOccurrence(UINT32 _iVariantIndex) {
 	return vvData.at(_iVariantIndex).getHyperGroupOccurrence();
 }
 
-UINT32 GwasData::getVairantNumTypes(UINT32 _iVariantIndex){
+UINT32 GwasData::getVariantNumTypes() {
+	return iNumVariantTypes;
+}
+
+UINT32 GwasData::getVariantNumTypes(UINT32 _iVariantIndex) {
 	return vvData.at(_iVariantIndex).iNumTypes;
+}
+
+int GwasData::getVariantPosition(UINT32 _iVariantIndex) {
+	return ((int)vvData.at(_iVariantIndex).iVariantPosition);
 }
 
 bool GwasData::loadBasicInfo(vector<string> & _vsInputFileList) {
@@ -113,7 +107,7 @@ bool GwasData::loadBasicInfo(vector<string> & _vsInputFileList) {
 	vector<UINT32> vi;
 	//open the first file
 	myFile.open(_vsInputFileList.at(0).c_str());
-	if (!myFile.is_open()) {
+	if(!myFile.is_open()) {
 		cout << "Unable to open file: " << _vsInputFileList.at(0) << endl;
 		return false;
 	}
@@ -123,10 +117,10 @@ bool GwasData::loadBasicInfo(vector<string> & _vsInputFileList) {
 	sGroupInfoHeader = text;
 	split(text, cDelim, vs);
 	map<string, int> msi;
-	for (size_t i = 3; i < vs.size(); i++) {
-		if(msi.find(vs.at(i))!=msi.end()){
+	for(size_t i = 3;i < vs.size();i++) {
+		if(msi.find(vs.at(i)) != msi.end()) {
 			msi[vs.at(i)] = msi[vs.at(i)] + 1;
-		}else{
+		} else {
 			msi[vs.at(i)] = 1;
 		}
 		iNumTotalSamplesAcrossGroups++;
@@ -136,36 +130,43 @@ bool GwasData::loadBasicInfo(vector<string> & _vsInputFileList) {
 	viNumSamplesPerGroup.resize(iNumGroups, 0);
 	viSampleGroupInfo.resize(iNumTotalSamplesAcrossGroups, 0);
 	UINT32 iValue = 0;
-	for (size_t i = 3; i < vs.size(); i++) {
+	for(size_t i = 3;i < vs.size();i++) {
 		iValue = atoi(vs.at(i).c_str());
-		if(iValue>=viNumSamplesPerGroup.size()){
+		if(iValue >= viNumSamplesPerGroup.size()) {
 			cout << "Group Index Error." << endl;
 		}
-		viSampleGroupInfo.at(i-3) = iValue;
-		viNumSamplesPerGroup.at(iValue)++;
+		viSampleGroupInfo.at(i - 3) = iValue;
+		++(viNumSamplesPerGroup.at(iValue));
 	}
 	//check the group info and the number of variant types per variant for all input files
-	for (size_t i = 0; i < _vsInputFileList.size(); i++) {
+	map<string, UINT32>::iterator it;
+	UINT32 iChrosomeIndex = 0;
+	for(size_t i = 0;i < _vsInputFileList.size();i++) {
 		myFile.open(_vsInputFileList.at(i).c_str());
-		if (!myFile.is_open()) {
+		if(!myFile.is_open()) {
 			cout << "Unable to open file: " << _vsInputFileList.at(i) << endl;
 			return false;
 		}
 		//check the group information
 		getline(myFile, text);
-		if (text != sGroupInfoHeader) {
+		if(text != sGroupInfoHeader) {
 			cout << "Group info is not consistent in file: " << _vsInputFileList.at(i) << endl;
 			myFile.close();
 			return false;
 		}
 		//check the variant information
-		while (!myFile.eof()) {
+		while(!myFile.eof()) {
 			getline(myFile, text);
-			if (text.empty()) {
+			if(text.empty()) {
 				continue;
 			}
 			split(text, cDelim, 3, vs, vi);
-			if (vi.size() != iNumTotalSamplesAcrossGroups) {
+			it = msiChromsomeIndex.find(vs.at(1));
+			if(it == msiChromsomeIndex.end()) {
+				msiChromsomeIndex[vs.at(1)] = iChrosomeIndex;
+				iChrosomeIndex++;
+			}
+			if(vi.size() != iNumTotalSamplesAcrossGroups) {
 				cout << "Number of variants is not consistent across files: " << _vsInputFileList.at(i) << endl;
 				cout << "Error line: " << text << endl;
 				myFile.close();
@@ -189,40 +190,41 @@ bool GwasData::loadDataParallel(vector<string> & _vsInputFileList) {
 	vector<string>* lineData = new vector<string>();
 	UINT32 iVariantIndex = 0;
 	vector<string> vsGroupInfo;
-	for (size_t i = 0; i < _vsInputFileList.size(); i++) {
+	for(size_t i = 0;i < _vsInputFileList.size();i++) {
 		myFile.open(_vsInputFileList.at(i).c_str());
-		if (!myFile.is_open()) {
+		if(!myFile.is_open()) {
 			cout << "Unable to open file: " << _vsInputFileList.at(i) << endl;
 			return false;
 		}
 		// skip the header line
 		getline(myFile, text);
 		// read each variant
-		while (!myFile.eof()) {
+		while(!myFile.eof()) {
 			//buffer the data
 			lineData->clear();
-			for (chunkCounter = 0; !myFile.eof() && chunkCounter < iChunkSize;) {
+			for(chunkCounter = 0;!myFile.eof() && chunkCounter < iChunkSize;) {
 				getline(myFile, text);
 				text.erase(std::remove(text.begin(), text.end(), '\n'), text.end());
-				if (text.empty()) {
+				if(text.empty()) {
 					break;
 				}
 				lineData->push_back(text);
 				chunkCounter++;
 			}
 			//parallel parse data
-//#pragma omp parallel
+#pragma omp parallel
 			{
 				string sLine;
 				vector<string>::const_iterator vs_iter;
 				vector<UINT32> viGroupCount(iNumGroups, 0);
 				vector<UINT32> vi;
 				map<UINT32, UINT32> mii;
-//#pragma omp for schedule(guided)
-				for (UINT32 j = 0; j < chunkCounter; j++) {
+#pragma omp for schedule(guided)
+				for(UINT32 j = 0;j < chunkCounter;j++) {
 					Variant variant;
 					vvData.at(iVariantIndex + j) = variant;
-					vvData.at(iVariantIndex + j).setData(lineData->at(j), cDelim, viNumSamplesPerGroup, viSampleGroupInfo, vi, mii, viGroupCount);
+					vvData.at(iVariantIndex + j).setData(lineData->at(j), cDelim, viNumSamplesPerGroup,
+							viSampleGroupInfo, vi, mii, viGroupCount, msiChromsomeIndex);
 				}
 			}
 			iVariantIndex += chunkCounter;
@@ -232,6 +234,11 @@ bool GwasData::loadDataParallel(vector<string> & _vsInputFileList) {
 	}
 	cout << endl;
 	delete lineData;
+	iNumVariantTypes = 0;
+	for(UINT32 i = 0;i < iNumVariants;i++) {
+		iNumVariantTypes += getVariantNumTypes(i);
+	}
+	iNumVariantTypes /= iNumVariants;
 	return true;
 }
 
@@ -240,29 +247,34 @@ void GwasData::readInput(vector<string> & _vsInputFileList) {
 	loadDataParallel(_vsInputFileList);
 }
 
-void GwasData::setVariantHyperFrequency(UINT32 _iVariantIndex, const vector<vector<vector<int>>>& _vvviHyperGroupInfo){
+void GwasData::setVariantHyperFrequency(UINT32 _iVariantIndex, const vector<vector<vector<int>>>& _vvviHyperGroupInfo) {
 	vvData.at(_iVariantIndex).setFrequency(_vvviHyperGroupInfo);
 }
 
-void GwasData::writeOutput(string & _sFilename) {
+void GwasData::writeOutput(string & _sFilename, const map<string, UINT32> & msiChromsomeIndex) {
 	ofstream filePointer;
 	filePointer.open(_sFilename.c_str(), ios_base::out);
 	vector<UINT32> vi;
 	//header
 	filePointer << "ID\tChr\tPos";
-	for (size_t j = 0; j < iNumGroups; j++) {
-		for (size_t i = 0; i < viNumSamplesPerGroup.at(j); i++) {
+	for(size_t j = 0;j < iNumGroups;j++) {
+		for(size_t i = 0;i < viNumSamplesPerGroup.at(j);i++) {
 			filePointer << "\t" << j;
 		}
 	}
 	filePointer << "\n";
-	for (size_t i = 0; i < iNumVariants; i++) {
+	for(size_t i = 0;i < iNumVariants;i++) {
 		filePointer << vvData.at(i).sVariantName << "\t";
-		filePointer << vvData.at(i).sChromsomeName << "\t";
+		for(auto &it : msiChromsomeIndex) {
+			if(it.second == vvData.at(i).iChromsomeNameIndex) {
+				filePointer << it.first << "\t";
+				break; // to stop searching
+			}
+		}
 		filePointer << vvData.at(i).iVariantPosition;
-		for (size_t j = 0; j < iNumGroups; j++) {
+		for(size_t j = 0;j < iNumGroups;j++) {
 			getValue(i, j, vi);
-			for (size_t k = 0; k < vi.size(); k++) {
+			for(size_t k = 0;k < vi.size();k++) {
 				filePointer << "\t";
 				filePointer << vi.at(k);
 			}

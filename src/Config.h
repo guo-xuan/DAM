@@ -34,6 +34,7 @@
 #include <streambuf>
 #include <map>
 #include <exception>
+#include <omp.h>
 
 using namespace std;
 

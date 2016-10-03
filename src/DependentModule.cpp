@@ -8,37 +8,28 @@
 #include "DependentModule.h"
 #include "GwasData.h"
 
-DependentModule::DependentModule(UINT32 _nMaxVariantAllowed, GwasData * _pGwasData, vector<vector<int>> _vvGroupInfo) {
+DependentModule::DependentModule(UINT32 _nMaxVariantAllowed, GwasData * _pGwasData, vector<vector<int>> _vvGroupInfo,
+		UINT32 _iAssociationType) {
 	nMaxVariantAllowed = _nMaxVariantAllowed;
 	pGwasData = _pGwasData;
 	iNumGroups = pGwasData->iNumGroups;
 	nTotalSamples = pGwasData->iNumTotalSamplesAcrossGroups;
 	viGroupSizeList = &(pGwasData->viNumSamplesPerGroup);
-	for(UINT32 i = 0;i < iNumGroups;i++) {
-		char * p = new char[_nMaxVariantAllowed * viGroupSizeList->at(i)];
-		vcGwasData.push_back(p);
-		p = new char[_nMaxVariantAllowed * viGroupSizeList->at(i)];
-		vcGwasDataBackup.push_back(p);
-	}
 	vvGroupInfo = _vvGroupInfo;
-	iNumKeys = 0;
-	iNumKeysBackup = 0;
+	iAssociationType = _iAssociationType;
 	pHashTable = new HashTable(nMaxVariantAllowed, nTotalSamples, iNumGroups, *viGroupSizeList);
 	pHashTableBackup = new HashTable(nMaxVariantAllowed, nTotalSamples, iNumGroups, *viGroupSizeList);
+	// pMapTable = new MapTable(nMaxVariantAllowed, nTotalSamples, iNumGroups, *viGroupSizeList);
 	dPosteriorProbability = 0;
-	// string implementation
-	iNextAvailableCounts = 0;
-	viNumCounts.resize(iNumGroups * nTotalSamples, 0);
-	for(UINT32 i = 0;i < iNumGroups;i++) {
-		vvsVariants.push_back(vector<string>());
-		for(UINT32 j = 0;j < viGroupSizeList->at(i);j++) {
-			vvsVariants.at(i).push_back(string());
-		}
-	}
+	dPosteriorProbabilityBackup = 0;
+	iNumVariants = 0;
+	iNumVariantsBackup = 0;
 }
 
 DependentModule::~DependentModule() {
-
+	// delete pMapTable;
+	delete pHashTable;
+	delete pHashTableBackup;
 }
 
 bool DependentModule::addVariants(vector<UINT32> & _viOuterIndex) {
@@ -46,41 +37,103 @@ bool DependentModule::addVariants(vector<UINT32> & _viOuterIndex) {
 	for(UINT32 i = 0;i < _viOuterIndex.size();i++) {
 		for(UINT32 j = 0;j < iNumGroups;j++) {
 			pGwasData->getValue(_viOuterIndex.at(i), j, viTemp);
-			for(UINT32 k = 0;k < viTemp.size();k++) {
-				vvsVariants.at(j).at(k).push_back(viTemp.at(k));
-			}
+			// pMapTable->add(i, j, viTemp);
+			pHashTable->add(i, j, viTemp);
 		}
+		viVariants.push_back(_viOuterIndex.at(i));
+		vpvviHyperGroupFrequency.push_back(
+				(&(pGwasData->getVariantHyperGroupFrequency(_viOuterIndex.at(i))->at(iAssociationType))));
 	}
-	msuHashTable.clear();
-	for(UINT32 i = 0;i < iNumGroups;i++) {
-		for(UINT32 j = 0;j < viGroupSizeList->at(i);j++) {
-			it = msuHashTable.find(vvsVariants.at(i).at(j));
-			if(it != msuHashTable.end()) {
-				viNumCounts.at(it->second*iNumGroups+i)++;
-			} else {
-				msuHashTable[vvsVariants.at(i).at(j)] = iNextAvailableCounts;
-				viNumCounts.at(iNextAvailableCounts*iNumGroups+i)++;
-				iNextAvailableCounts++;
-			}
-		}
-	}
-	// qiuming's hashtable implementation
+	iNumVariants += _viOuterIndex.size();
+	// pMapTable->hashing();
+	pHashTable->setNumVariants(iNumVariants);
+	pHashTable->clean();
+	pHashTable->hashing();
+	// pHashTable->print();
 	return true;
 }
 
-void DependentModule::cleanHashtable(){
-	fill(viNumCounts.begin(), viNumCounts.begin()+(iNextAvailableCounts*iNumGroups), 0);
-	iNextAvailableCounts = 0;
+bool DependentModule::apply() {
+	pHashTableBackup->copyFrom((*pHashTable));
+	dPosteriorProbabilityBackup = dPosteriorProbability;
+	iNumVariantsBackup = iNumVariants;
+	viVariantsBackup = viVariants;
+	vpvviHyperGroupFrequencyBackup = vpvviHyperGroupFrequency;
+	return true;
 }
 
-void DependentModule::cleanVariants(){
-	for(UINT32 i = 0;i < iNumGroups;i++) {
-		for(UINT32 j = 0;j < viGroupSizeList->at(i);j++) {
-			vvsVariants.at(i).at(j).clear();
-		}
+double DependentModule::calPosterior() {
+	dPosteriorProbability = pHashTable->calPosteriorProbability(vvGroupInfo, vpvviHyperGroupFrequency);
+	return dPosteriorProbability;
+}
+
+void DependentModule::cleanHashtable() {
+	// pMapTable->clean();
+	pHashTable->clean();
+	iNumVariants = 0;
+}
+
+bool DependentModule::delVariants(vector<UINT32> & _viInnerIndex) {
+	for(UINT32 i = 0;i < _viInnerIndex.size();i++) {
+		pHashTable->del(_viInnerIndex.at(i));
+		viVariants.erase(viVariants.begin() + _viInnerIndex.at(i));
+		vpvviHyperGroupFrequency.erase(vpvviHyperGroupFrequency.begin() + _viInnerIndex.at(i));
+	}
+	iNumVariants -= _viInnerIndex.size();
+	pHashTable->setNumVariants(iNumVariants);
+	pHashTable->clean();
+	pHashTable->hashing();
+	return true;
+}
+
+vector<UINT32> * DependentModule::getVariants(){
+	return (& viVariants);
+}
+
+void DependentModule::getVariants(vector<UINT32> & _viInnerIndex, vector<UINT32> & _viOuterIndex) {
+	_viOuterIndex.clear();
+	for(UINT32 i = 0;i < _viInnerIndex.size();i++) {
+		_viOuterIndex.push_back(viVariants.at(_viInnerIndex.at(i)));
 	}
 }
 
 double DependentModule::getPosterior() {
-	return dPosteriorProbability;
+	// dPosteriorProbability = pHashTable->calPosteriorProbability(vvGroupInfo, vpvviHyperGroupFrequency);
+	return dPosteriorProbabilityBackup;
+}
+
+void DependentModule::getRestVariants(vector<UINT32> & _viInnerIndex, vector<UINT32> & _viOuterIndex) {
+	_viOuterIndex.clear();
+	for(UINT32 i = 0;i < viVariants.size();i++) {
+		if(find(begin(_viInnerIndex), end(_viInnerIndex), viVariants.at(i)) == end(_viInnerIndex)) {
+			_viOuterIndex.push_back(viVariants.at(i));
+		}
+	}
+}
+
+bool DependentModule::replaceVariants(vector<UINT32> & _viInnerIndex, vector<UINT32> & _viOuterIndex) {
+	if(_viInnerIndex.size() != _viOuterIndex.size()) {
+		cout << "Error replace variants." << endl;
+	}
+	for(UINT32 i = 0;i < _viInnerIndex.size();i++) {
+		for(UINT32 j = 0;j < iNumGroups;j++) {
+			pGwasData->getValue(_viOuterIndex.at(i), j, viTemp);
+			pHashTable->replace(_viInnerIndex.at(i), j, viTemp);
+		}
+		viVariants.at(_viInnerIndex.at(i)) = _viOuterIndex.at(i);
+		vpvviHyperGroupFrequency.at(_viInnerIndex.at(i)) = (&(pGwasData->getVariantHyperGroupFrequency(
+				_viOuterIndex.at(i))->at(iAssociationType)));
+	}
+	pHashTable->clean();
+	pHashTable->hashing();
+	return true;
+}
+
+bool DependentModule::rollBack() {
+	pHashTable->copyFrom((*pHashTableBackup));
+	dPosteriorProbability = dPosteriorProbabilityBackup;
+	iNumVariants = iNumVariantsBackup;
+	viVariants = viVariantsBackup;
+	vpvviHyperGroupFrequency = vpvviHyperGroupFrequencyBackup;
+	return true;
 }

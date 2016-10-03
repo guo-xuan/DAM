@@ -32,16 +32,16 @@ void IndependentModule::initial(GwasData * _pGwasData, vector<vector<vector<int>
 	iNumAssociationTypes = vvviHyperGroup.size();
 	iNumVariants = _pGwasData->iNumVariants;
 	vdIndependentPosteriorPerVariant = new double[iNumVariants*iNumAssociationTypes];
-//#pragma omp parallel
+#pragma omp parallel
 		{
 			vector<vector<vector<double>>> * vvviHyperGroupFrequency;
 			vector<vector<vector<UINT32>>> * vvviHyperGroupOccurrence;
 			double posterior = 0;
 			double ni = 0, alphai = 0, N = 0, alpha = 0;
 			UINT32 iVariantNumTypes = 0;
-//#pragma omp for schedule(guided)
+#pragma omp for schedule(guided)
 			for(UINT32 i = 0;i<iNumVariants;i++) {
-				iVariantNumTypes = _pGwasData->getVairantNumTypes(i);
+				iVariantNumTypes = _pGwasData->getVariantNumTypes(i);
 				_pGwasData->setVariantHyperFrequency(i, vvviHyperGroup);
 				vvviHyperGroupFrequency = _pGwasData->getVariantHyperGroupFrequency(i);
 				vvviHyperGroupOccurrence = _pGwasData->getVariantHyperGroupOccurrence(i);

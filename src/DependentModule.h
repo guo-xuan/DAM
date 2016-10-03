@@ -11,44 +11,48 @@
 #include "Config.h"
 #include "HashTable.h"
 #include "GwasData.h"
+#include "MapTable.h"
 
 class DependentModule {
 public:
 
 	double dPosteriorProbability;
+	double dPosteriorProbabilityBackup;
 
 	HashTable * pHashTable;
 	HashTable * pHashTableBackup;
 	vector<vector<int>> vvGroupInfo;
+	UINT32 iAssociationType;
 
-	//1D: group, 2D: sample, 3D: variant
-	vector<char*> vcGwasData;
-	UINT32 iNumKeys;
-	vector<char*> vcGwasDataBackup;
-	UINT32 iNumKeysBackup;
 	UINT32 nMaxVariantAllowed;
 	UINT32 nTotalSamples;
 	UINT32 iNumGroups;
 	GwasData * pGwasData;
 	vector<UINT32> * viGroupSizeList;
-
-	// string implementation
-	vector<UINT32> viNumCounts;
-	UINT32 iNextAvailableCounts;
-	vector<vector<string>> vvsVariants;
-	map<string, UINT32> msuHashTable;
 	vector<UINT32> viTemp;
-	map<string, UINT32>::iterator it;
 
-	DependentModule(UINT32 _nMaxVariantAllowed, GwasData * GwasData, vector<vector<int>> _vvGroupInfo);
+	// MapTable * pMapTable;
+
+	UINT32 iNumVariants;
+	vector<UINT32> viVariants;
+	vector<vector<vector<double>> *> vpvviHyperGroupFrequency;
+
+	UINT32 iNumVariantsBackup;
+	vector<UINT32> viVariantsBackup;
+	vector<vector<vector<double>> *> vpvviHyperGroupFrequencyBackup;
+
+	DependentModule(UINT32 _nMaxVariantAllowed, GwasData * GwasData, vector<vector<int>> _vvGroupInfo, UINT32 _iAssociationType);
 	~DependentModule();
 
 	bool addVariants(vector<UINT32> & _viOuterIndex);
 	bool apply();
+	double calPosterior();
 	void cleanHashtable();
-	void cleanVariants();
 	bool delVariants(vector<UINT32> & _viInnerIndex);
+	vector<UINT32> * getVariants();
+	void getVariants(vector<UINT32> & _viInnerIndex, vector<UINT32> & _viOuterIndex);
 	double getPosterior();
+	void getRestVariants(vector<UINT32> & _viInnerIndex, vector<UINT32> & _viOuterIndex);
 	bool replaceVariants(vector<UINT32> & _viInnerIndex, vector<UINT32> & _viOuterIndex);
 	bool rollBack();
 };

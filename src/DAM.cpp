@@ -15,15 +15,9 @@
 
 using namespace std;
 
-bool setConfiguration(GwasData * gwasData) {
+bool setupConfig(GwasData * gwasData) {
 	Config::iNumVariants = gwasData->iNumVariants;
 	Config::iNumGroups = gwasData->iNumGroups;
-	MCMC::iNumVariants = Config::iNumVariants;
-	MCMC::iNumGroups = Config::iNumGroups;
-	MCMC::iNumBurnins = MCMC::iNumVariants * 400;
-	MCMC::iNumIterations = MCMC::iNumVariants * (MCMC::iNumVariants > 100000 ? 100000 : MCMC::iNumVariants);
-	MCMC::setupMCMC(Config::iNumIndependentVariants, Config::iNumDependentVariants);
-	MCMC::gwasData = gwasData;
 	return true;
 }
 
@@ -37,17 +31,19 @@ int main(int argc, char **argv) {
 
 	GwasData * gwasData = new GwasData();
 	gwasData->readInput(Config::vsInputVariantFiles);
-	// set the gwas data in the config and also MCMC
-	setConfiguration(gwasData);
+	setupConfig(gwasData);
 
 	//string sFileOut = "test.txt";
 	//gwasData->writeOutput(sFileOut);
 
+	// set the gwas data in the config and also MCMC
+	MCMC::setupMCMC(gwasData);
 	// create chains
 	vector<MCMC *> vMcmc;
 	for(size_t i = 0;i < Config::iNumChains;i++) {
 		MCMC * pMcmc = new MCMC();
-		pMcmc->initilizeMCMC();
+		// pMcmc->initilizeMCMC();
+		pMcmc->test();
 		vMcmc.push_back(pMcmc);
 	}
 	//run chains
