@@ -42,6 +42,7 @@ public:
 	UINT32 getVariantChromsome(UINT32 _iVariantIndex);
 	vector<vector<vector<double>>> * getVariantHyperGroupFrequency(UINT32 _iVariantIndex);
 	vector<vector<vector<UINT32>>> * getVariantHyperGroupOccurrence(UINT32 _iVariantIndex);
+	void getVariantNearby(UINT32 _iVariantIndex, UINT32 _distance, vector<UINT32> & _vi);
 	UINT32 getVariantNumTypes();
 	UINT32 getVariantNumTypes(UINT32 _iVariantIndex);
 	int getVariantPosition(UINT32 _iVariantIndex);

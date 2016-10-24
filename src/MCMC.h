@@ -64,11 +64,14 @@ public:
 	double dLogPosterior;
 
 	static bool destroyMCMC();
+	void getTopDependentVariant(vector<UINT32> & _viVariant, UINT32 _iNum);
+	void getTopIndependentVariant(vector<UINT32> & _viVariant, UINT32 _iNum);
 	bool initilizeMCMC();
-	bool isConveraged();
+	bool isConveraged(double _dLogPosterior);
 	void recordFrequency();
 	bool runMCMC();
 	static bool setupMCMC(GwasData * _gwasData);
+	void shiftPosition();
 	bool test();
 	bool updateDependentIndependent(double _p0, double _p1, double _p2, double _T, UINT32 _iMinDependentVariants);
 	bool updateDependentIntra(double _T);
@@ -127,7 +130,14 @@ private:
 
 	int iMiniDistance;
 
-	bool isTooClose(UINT32 _iOuterId, vector<UINT32> _viSelectedVariants);
+	vector<double> vdLogPosterior;
+	UINT32 iLogPosteriorSize;
+	UINT32 iLogPosteriorIndex;
+
+	vector<UINT32> viNearbyVariants;
+
+	bool isTooClose(UINT32 _iOuterId, vector<UINT32> & _viSelectedVariants);
+	void get_close_variant(UINT32 _iOuterId, vector<UINT32> & _viExistVariants, vector<UINT32> & _viCandidateVariants);
 	double get_random_number();
 	UINT32 get_random_number(UINT32 _iMax);
 	void shuffleSelect(vector<UINT32> & _viShuffleSelect, UINT32 _iNumSelect, vector<UINT32> & _viInnerSelectedVariantIds);

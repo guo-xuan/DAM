@@ -56,6 +56,16 @@ vector<vector<vector<UINT32>>>* Variant::getHyperGroupOccurrence() {
 	return (& vvviHyperGroupOccurrence);
 }
 
+bool Variant::operator <(const Variant & _o) const {
+	if(iChromsomeNameIndex < _o.iChromsomeNameIndex) {
+		return true;
+	} else if(iChromsomeNameIndex > _o.iChromsomeNameIndex) {
+		return false;
+	} else {
+		return (iVariantPosition < _o.iVariantPosition);
+	}
+}
+
 void Variant::setData(const string & _sLine, char _delim, const vector<UINT32> & _viNumSamplePerGroup,
 		const vector<UINT32> & _viSampleGroupInfo, const map<string, UINT32> & msiChromsomeIndex) {
 	vector<UINT32> _vector;

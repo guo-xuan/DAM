@@ -87,6 +87,35 @@ vector<vector<vector<UINT32>>>* GwasData::getVariantHyperGroupOccurrence(UINT32 
 	return vvData.at(_iVariantIndex).getHyperGroupOccurrence();
 }
 
+void GwasData::getVariantNearby(UINT32 _iVariantIndex, UINT32 _distance, vector<UINT32> & _vi) {
+	_vi.clear();
+	int iIndex = _iVariantIndex + 1;
+	UINT32 iChr = vvData.at(iIndex).iChromsomeNameIndex, iPos = vvData.at(iIndex).iVariantPosition;
+	while(iIndex < ((int) iNumVariants)) {
+		if(vvData.at(iIndex).iChromsomeNameIndex != iChr) {
+			break;
+		}
+		if(vvData.at(iIndex).iVariantPosition - iPos < _distance) {
+			_vi.push_back(iIndex);
+		} else {
+			break;
+		}
+		++iIndex;
+	}
+	iIndex = ((int) _iVariantIndex) - 1;
+	while(iIndex >= 0) {
+		if(vvData.at(iIndex).iChromsomeNameIndex != iChr) {
+			break;
+		}
+		if(iPos - vvData.at(iIndex).iVariantPosition < _distance) {
+			_vi.push_back(iIndex);
+		} else {
+			break;
+		}
+		--iIndex;
+	}
+}
+
 UINT32 GwasData::getVariantNumTypes() {
 	return iNumVariantTypes;
 }
@@ -96,7 +125,7 @@ UINT32 GwasData::getVariantNumTypes(UINT32 _iVariantIndex) {
 }
 
 int GwasData::getVariantPosition(UINT32 _iVariantIndex) {
-	return ((int)vvData.at(_iVariantIndex).iVariantPosition);
+	return ((int) vvData.at(_iVariantIndex).iVariantPosition);
 }
 
 bool GwasData::loadBasicInfo(vector<string> & _vsInputFileList) {
@@ -239,6 +268,8 @@ bool GwasData::loadDataParallel(vector<string> & _vsInputFileList) {
 		iNumVariantTypes += getVariantNumTypes(i);
 	}
 	iNumVariantTypes /= iNumVariants;
+	// sort the variant according to the chromosome location
+	sort(vvData.begin(), vvData.end());
 	return true;
 }
 

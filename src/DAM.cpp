@@ -12,6 +12,7 @@
 #include "Config.h"
 #include "GwasData.h"
 #include "MCMC.h"
+#include "AssociationEvaluation.h"
 
 using namespace std;
 
@@ -23,6 +24,14 @@ bool setupConfig(GwasData * gwasData) {
 
 int main(int argc, char **argv) {
 
+/*	vector<UINT32> vCombination;
+	vCombination.push_back(0);
+	vCombination.push_back(1);
+	vCombination.push_back(1);
+	vector<Interaction> vInteraction;
+	AssociationEvaluation obj;
+	obj.combinationGenerator(1, 20, vInteraction, 1000, vCombination);
+	return 0;*/
 	// parse command line options:
 	if(!Config::setConfig(argc, argv)) {
 		cout << "Please follow the above help information." << endl;
@@ -47,12 +56,20 @@ int main(int argc, char **argv) {
 		vMcmc.push_back(pMcmc);
 	}
 	//run chains
+	for(size_t i = 0;i < Config::iNumChains;i++) {
+		vMcmc.at(i)->runMCMC();
+	}
+	// sum up all the frequencies from all chains, choose the top 200 variants for next phase
+	vector<UINT32> viVariants;
 
 	//free memory
 	delete gwasData;
 	for(size_t i = 0;i < Config::iNumChains;i++) {
 		delete vMcmc.at(i);
 	}
+
 	MCMC::destroyMCMC();
+
+
 	return 0;
 }

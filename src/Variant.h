@@ -32,8 +32,9 @@ public:
 	~Variant();
 
 	void getDataInGroup(UINT32 iGroupIndex, vector<UINT32> & _vi);
-	vector<vector<vector<double>>> * getHyperGroupFrequency();
+	vector<vector<vector<double>>>* getHyperGroupFrequency();
 	vector<vector<vector<UINT32>>> * getHyperGroupOccurrence();
+	bool operator < (const Variant & _o) const;
 	void setData(const string & _sLine, char _delim, const vector<UINT32> & _viNumSamplePerGroup,
 			const vector<UINT32> & _viSampleGroupInfo, const map<string, UINT32> & msiChromsomeIndex);
 	void setData(const string & _sLine, char _delim, const vector<UINT32> & _viNumSamplePerGroup,

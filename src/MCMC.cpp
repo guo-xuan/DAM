@@ -43,6 +43,9 @@ MCMC::MCMC() {
 	dPosteriorDifference = 0;
 	distribution = uniform_real_distribution<double>(0.0, 1.0);
 	dRandomNumber = 0;
+
+	iLogPosteriorSize = 2000;
+	iLogPosteriorIndex = 0;
 }
 
 MCMC::~MCMC() {
@@ -59,6 +62,10 @@ bool MCMC::destroyMCMC() {
 	delete oIndependentModule;
 
 	return true;
+}
+
+void MCMC::getTopDependentVariant(vector<UINT32> & _viVariant, UINT32 _iNum){
+
 }
 
 /**
@@ -85,7 +92,7 @@ bool MCMC::initilizeMCMC() {
 			}
 		}
 	}
-	viIndependentVariants = viIndependentVariants.size();
+	iNumIndependentVariants = viIndependentVariants.size();
 	vector<UINT32> viVariants;
 	for(UINT32 i = 1 + iNumHyperGroupTypes;i < iNumHyperGroupTypes * 2;i++) {
 		mcpDependentAssociation[i] = new DependentModule(iMaxVariants, gwasData,
@@ -106,8 +113,53 @@ bool MCMC::initilizeMCMC() {
 	return true;
 }
 
-void MCMC::recordFrequency() {
+bool MCMC::isConveraged(double _dLogPosterior) {
+	UINT32 i, len = iLogPosteriorSize / 2;
+	if(vdLogPosterior.size() < iLogPosteriorSize) {
+		vdLogPosterior.push_back(_dLogPosterior);
+		iLogPosteriorIndex += 1;
+	} else {
+		iLogPosteriorIndex = iLogPosteriorIndex % iLogPosteriorSize;
+		vdLogPosterior.at(iLogPosteriorIndex) = _dLogPosterior;
+		double sum1 = 0, sum2 = 0, s1 = 0, s2 = 0;
+		for(i = 1;i <= len;++i) {
+			sum1 += vdLogPosterior.at((i + iLogPosteriorIndex) % iLogPosteriorSize);
+		}
+		for(;i <= iLogPosteriorSize;++i) {
+			sum2 += vdLogPosterior.at((i + iLogPosteriorIndex) % iLogPosteriorSize);
+		}
+		sum1 /= ((double) len);
+		sum2 /= ((double) len);
+		for(i = 1;i <= len;++i) {
+			s1 += (vdLogPosterior.at((i + iLogPosteriorIndex) % iLogPosteriorSize) - sum1)
+					* (vdLogPosterior.at((i + iLogPosteriorIndex) % iLogPosteriorSize) - sum1);
+		}
+		for(;i <= iLogPosteriorSize;++i) {
+			s2 += (vdLogPosterior.at((i + iLogPosteriorIndex) % iLogPosteriorSize) - sum2)
+					* (vdLogPosterior.at((i + iLogPosteriorIndex) % iLogPosteriorSize) - sum2);
+		}
+		if(s2 / s1 > 0.9 && s2 / s1 < 1.1) {
+			return true;
+		}
+	}
+	return false;
+}
 
+void MCMC::recordFrequency() {
+	UINT32 iUnit = iNumHyperGroupTypes * 2;
+	for(UINT32 i = 0;i < iNumIndependentVariants;i++) {
+		iFrequencyForAllVairants[viIndependentVariants.at(i) * iUnit
+				+ acAssociationTypesForAllVariants[viIndependentVariants.at(i)]] += 1;
+	}
+	map<char, DependentModule*>::iterator it;
+	vector<UINT32> * pvi;
+	for(it = mcpDependentAssociation.begin();it != mcpDependentAssociation.end();it++) {
+		pDependentModule = it->second;
+		pvi = pDependentModule->getVariants();
+		for(UINT32 i = 0;i < pvi->size();i++) {
+			iFrequencyForAllVairants[pvi->at(i) * iUnit + it->first] += 1;
+		}
+	}
 }
 
 bool MCMC::runMCMC() {
@@ -172,7 +224,11 @@ bool MCMC::runMCMC() {
 
 		if(i >= iNumBurnins) {
 			if((i - iNumBurnins) % STEP == 0) {
+				shiftPosition();
 				recordFrequency();
+				if(isConveraged(dLogPosterior)) {
+					return true;
+				}
 			}
 		}
 	}
@@ -219,6 +275,87 @@ bool MCMC::setupMCMC(GwasData * _gwasData) {
 	iMaxVariants = Config::iMaxVariants;
 
 	return true;
+}
+
+/**
+ * find the position with the largest probability
+ */
+void MCMC::shiftPosition() {
+	map<char, DependentModule*>::iterator it;
+	vector<UINT32> * viVariants;
+	UINT32 iChromsomeIndex1;
+	UINT32 i, j, k;
+	int iPos1, iPos2;
+	bool bTooClose = false;
+	vector<UINT32> viTemp, viTemp2;
+	vector<double> vdPosterior;
+	double maxPosterior;
+	UINT32 iVariantId, iOldVariantId;
+	for(it = mcpDependentAssociation.begin();it != mcpDependentAssociation.end();++it) {
+		if(it->second->iNumVariants == 0) {
+			continue;
+		}
+		viVariants = it->second->getVariants();
+		for(i = 0;i < viVariants->size();++i) {
+			iOldVariantId = viVariants->at(i);
+			gwasData->getVariantNearby(iOldVariantId, iMiniDistance, viNearbyVariants);
+			// remove variants that are too close to the existing one
+			viTemp.clear();
+			for(j = 0;j < viNearbyVariants.size();++j) {
+				bTooClose = false;
+				iPos1 = gwasData->getVariantPosition(viNearbyVariants.at(j));
+				iChromsomeIndex1 = gwasData->getVariantChromsome(viNearbyVariants.at(j));
+				for(k = 0;k < viVariants->size();++k) {
+					if(k != i && iChromsomeIndex1 == gwasData->getVariantChromsome(viVariants->at(k))) {
+						iPos2 = gwasData->getVariantPosition(viVariants->at(k));
+						if(abs(iPos1 - iPos2) < iMiniDistance) {
+							bTooClose = true;
+							break;
+						}
+					}
+				}
+				if(!bTooClose) {
+					viTemp.push_back(viNearbyVariants.at(j));
+				}
+			}
+			if(viTemp.empty()) {
+				continue;
+			}
+			viNearbyVariants = viTemp;
+			// try all the nearby variants
+			vdPosterior.clear();
+			viTemp.clear();
+			viTemp.push_back(i);
+			for(j = 0;j < viNearbyVariants.size();j++) {
+				viTemp2.clear();
+				viTemp2.push_back(viNearbyVariants.at(j));
+				it->second->replaceVariants(viTemp, viTemp2);
+				vdPosterior.push_back(it->second->calPosterior());
+			}
+			iVariantId = 0;
+			maxPosterior = vdPosterior.at(0);
+			for(j = 1;j < vdPosterior.size();++j) {
+				if(vdPosterior.at(j) > maxPosterior) {
+					maxPosterior = vdPosterior.at(j);
+					iVariantId = j;
+				}
+			}
+			// apply if the probability is smaller
+			if(maxPosterior > it->second->getPosterior()) {
+				dLogPosterior += (maxPosterior - it->second->getPosterior());
+				viTemp.clear();
+				viTemp.push_back(i);
+				viTemp2.clear();
+				viTemp2.push_back(viNearbyVariants.at(iVariantId));
+				it->second->replaceVariants(viTemp, viTemp2);
+				it->second->calPosterior();
+				it->second->apply();
+				acAssociationTypesForAllVariants[iOldVariantId] = acAssociationTypesForAllVariants[viNearbyVariants.at(
+						iVariantId)];
+				acAssociationTypesForAllVariants[viNearbyVariants.at(iVariantId)] = it->first;
+			}
+		}
+	}
 }
 
 bool MCMC::test() {
@@ -340,7 +477,7 @@ bool MCMC::updateDependentIndependent(double _p0, double _p1, double _p2, double
 		for(UINT32 i = 0;i < iNumSelectVariants;i++) {
 			dPosteriorDifference += oIndependentModule->getIndependentPosterior(viOuterSelectedVariantIds.at(i),
 					vcAssociationTypes.at(i));
-			dPosteriorDifference += (dPriorIndependent[vcAssociationTypes.at(i)]
+			dPosteriorDifference += (dPriorIndependent[(UINT32) vcAssociationTypes.at(i)]
 					- dPriorDependent[iIndexTypeDependentAssoication]);
 		}
 		dProbabilityRandom = get_random_number();
@@ -452,7 +589,7 @@ bool MCMC::updateDependentIndependent(double _p0, double _p1, double _p2, double
 			dPosteriorDifference += (-oIndependentModule->getIndependentPosterior(viOuterSelectedVariantIds.at(i),
 					acAssociationTypesForAllVariants[viOuterSelectedVariantIds.at(i)]));
 			dPosteriorDifference += (dPriorDependent[iIndexTypeDependentAssoication]
-					- dPriorIndependent[acAssociationTypesForAllVariants[viOuterSelectedVariantIds.at(i)]]);
+					- dPriorIndependent[(UINT32) acAssociationTypesForAllVariants[viOuterSelectedVariantIds.at(i)]]);
 		}
 		dProbabilityRandom = get_random_number();
 		if(dPosteriorDifference / _T + logratio >= 0
@@ -531,11 +668,11 @@ bool MCMC::updateDependentIntra(double _T) {
 		pDependentModuleSwitch->addVariants(viOuterSelectedVariantIds);
 		dPosteriorDifference += pDependentModuleSwitch->calPosterior() - pDependentModuleSwitch->getPosterior();
 		for(UINT32 i = 0;i < iNumSelectVariants;i++) {
-			pDependentModuleSwitch += (dPriorDependent[iIndexTypeDependentAssoicationSwitch]
+			dPosteriorDifference += (dPriorDependent[iIndexTypeDependentAssoicationSwitch]
 					- dPriorDependent[iIndexTypeDependentAssoication]);
 		}
 		for(UINT32 i = 0;i < iNumSelectVariantsSwitch;i++) {
-			pDependentModuleSwitch += (dPriorDependent[iIndexTypeDependentAssoication]
+			dPosteriorDifference += (dPriorDependent[iIndexTypeDependentAssoication]
 					- dPriorDependent[iIndexTypeDependentAssoicationSwitch]);
 		}
 		if(dPosteriorDifference / _T >= 0 || dPosteriorDifference / _T >= log(dProbabilityRandom)) {
@@ -767,8 +904,25 @@ bool MCMC::updateDependentNoise(double _p0, double _p1, double _p2, double _T, U
 	return true;
 }
 
-bool MCMC::updateIndependentIntra(double _T){
+bool MCMC::updateIndependentIntra(double _T) {
+	if(iNumIndependentVariants == 0) {
+		return true;
+	}
+	iSelectedVariantInner = get_random_number(iNumIndependentVariants);
+	iSelectedVariantOuter = viIndependentVariants.at(iSelectedVariantInner);
+	do {
+		iIndexTypeDependentAssoication = get_random_number(iNumHyperGroupTypes) + 1;
+	} while(iIndexTypeDependentAssoication == (UINT32) acAssociationTypesForAllVariants[iSelectedVariantOuter]);
+	dPosteriorDifference = oIndependentModule->getIndependentPosterior(iSelectedVariantOuter,
+			iIndexTypeDependentAssoication)
+			- oIndependentModule->getIndependentPosterior(iSelectedVariantOuter,
+					acAssociationTypesForAllVariants[iSelectedVariantOuter]);
 
+	dProbabilityRandom = get_random_number();
+	if(dPosteriorDifference / _T >= 0 || dPosteriorDifference / _T >= log(dProbabilityRandom)) {
+		dLogPosterior += dPosteriorDifference;
+		acAssociationTypesForAllVariants[iSelectedVariantOuter] = iIndexTypeDependentAssoication;
+	}
 	return true;
 }
 
@@ -796,7 +950,7 @@ bool MCMC::updateIndependentNoise(double _p0, double _p1, double _p2, double _T)
 				- oIndependentModule->getIndependentPosterior(iSelectedVariantOuter,
 						acAssociationTypesForAllVariants[iSelectedVariantOuter]);
 		dPosteriorDifference += (dPriorIndependent[0]
-				- dPriorIndependent[acAssociationTypesForAllVariants[iSelectedVariantOuter]]);
+				- dPriorIndependent[(UINT32) acAssociationTypesForAllVariants[iSelectedVariantOuter]]);
 		dProbabilityRandom = get_random_number();
 		if(dPosteriorDifference / _T + logratio >= 0
 				|| dPosteriorDifference / _T + logratio >= log(dProbabilityRandom)) {
@@ -859,7 +1013,10 @@ bool MCMC::updateIndependentNoise(double _p0, double _p1, double _p2, double _T)
 
 // private method
 
-bool MCMC::isTooClose(UINT32 _iOuterId, vector<UINT32> _viSelectedVariants) {
+/**
+ * check if Outer id is close to the given list of variants
+ */
+bool MCMC::isTooClose(UINT32 _iOuterId, vector<UINT32> & _viSelectedVariants) {
 	UINT32 iChromsomeIndex = gwasData->getVariantChromsome(_iOuterId);
 	int iPos = gwasData->getVariantPosition(_iOuterId);
 	for(UINT32 i = 0;i < _viSelectedVariants.size();i++) {
@@ -870,6 +1027,11 @@ bool MCMC::isTooClose(UINT32 _iOuterId, vector<UINT32> _viSelectedVariants) {
 		}
 	}
 	return false;
+}
+
+void MCMC::get_close_variant(UINT32 _iOuterId, vector<UINT32> & _viExistVariants,
+		vector<UINT32> & _viCandidateVariants) {
+
 }
 
 double MCMC::get_random_number() {
