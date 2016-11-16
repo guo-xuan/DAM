@@ -18,8 +18,8 @@ public:
 	ConditionalChisquare();
 	~ConditionalChisquare();
 
-	bool isSignificant();
 	void initilize(int _iMaxVariant, GwasData * _gwasData, char ** _pData, UINT32 _iMaxNumVariantTypes);
+	bool isSignificant();
 	void setVariants(vector<UINT32> & _viVariants, vector<bool> & _viExistVariants);
 
 private:

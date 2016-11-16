@@ -28,6 +28,7 @@ public:
 
 	void initialize(vector<UINT32> & _viVariants, GwasData * _gwasData, UINT32 _iMaxInteractionSize);
 	void Evaluation();
+	void WriteResults(string & _sFilename);
 
 private:
 	/**
@@ -53,6 +54,7 @@ private:
 	vector<ConditionalChisquare> vChiSquareKits;
 
 	UINT32 iMaxNumVariantTypes;
+	vector<bool> viAlreadySelectedVariants;
 
 
 	bool combinationGenerator(int _iSize, int _iNumCandidate, vector<Interaction> & _vInteraction, int _iBatchSize, vector<UINT32> & _vCombination);

@@ -20,6 +20,9 @@ AssociationEvaluation::~AssociationEvaluation() {
 	delete[] pData;
 }
 
+/**
+ *
+ */
 void AssociationEvaluation::initialize(vector<UINT32> & _viVariants, GwasData * _gwasData,
 		UINT32 _iMaxInteractionSize) {
 	viVariants = _viVariants;
@@ -74,10 +77,19 @@ void AssociationEvaluation::Evaluation() {
 			iNum = vInteractionCandidates.size();
 #pragma omp for schedule(guided)
 			for(UINT32 k = 0;k < iNum;++k) {
+				int thread_id = omp_get_thread_num();
+				vChiSquareKits.at(thread_id).setVariants(vInteractionCandidates.at(k).viInnerVariantIds, viAlreadySelectedVariants);
+				if(vChiSquareKits.at(thread_id).isSignificant()){
+					// set the association type, the chi-square value or p-value
 
+				}
 			}
 		}
 	}
+}
+
+void AssociationEvaluation::WriteResults(string & _sFilename){
+
 }
 
 /**

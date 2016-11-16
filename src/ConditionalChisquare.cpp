@@ -68,3 +68,16 @@ void ConditionalChisquare::initilize(int _iMaxVariant, GwasData * _gwasData, cha
 	pdFrequency = new double[iSizeFrequency * iNumGroups];
 	piKeyPairs = new UINT64[iSizeFrequency * 2];
 }
+
+bool ConditionalChisquare::isSignificant(){
+	// try all association types first
+	// if significant, then check conditional chi-square
+	// if also significant, return true after set the p-value and the association type
+
+
+	return false;
+}
+
+void ConditionalChisquare::setVariants(vector<UINT32> & _viVariants, vector<bool> & _viExistVariants){
+
+}

@@ -56,6 +56,7 @@ public:
 	static double iNumIndependentVariants;
 	static double iNumDependentVariants;
 	static UINT32 iMaxVariants;
+	static UINT32 iMaxVariantsInInteraction;
 
 	Config();
 	virtual ~Config();

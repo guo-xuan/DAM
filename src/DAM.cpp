@@ -70,6 +70,12 @@ int main(int argc, char **argv) {
 
 	MCMC::destroyMCMC();
 
-
+	// step-wise evaluation
+	AssociationEvaluation * pAssociationEvaluation = new AssociationEvaluation();
+	pAssociationEvaluation->initialize(viVariants, gwasData, Config::iMaxVariantsInInteraction);
+	pAssociationEvaluation->Evaluation();
+	string file_result = Config::sOutputFolder + "result.txt";
+	pAssociationEvaluation->WriteResults(file_result);
+	delete pAssociationEvaluation;
 	return 0;
 }
