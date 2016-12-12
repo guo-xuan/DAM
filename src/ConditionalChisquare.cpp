@@ -12,46 +12,10 @@ ConditionalChisquare::ConditionalChisquare() {
 }
 
 ConditionalChisquare::~ConditionalChisquare() {
-	delete[] pdFrequency;
+	delete[] pdKeyFrequency;
+	delete[] pdLeftKeyFrequency;
+	delete[] pdRightKeyFrequency;
 	delete[] piKeyPairs;
-}
-
-void ConditionalChisquare::collectPartialTablePerLevel() {
-	UINT64 iKeyGiven, iKeyLeft, iKey;
-	UINT32 i, j, k;
-	memset(pdFrequency, 0, sizeof(double) * iSizeFrequency);
-	umiiTable.clear();
-	unordered_map<UINT64, UINT32>::const_iterator itFrequency;
-	UINT32 idFrequency = 0;
-	for(i = 0;i < iNumGroups;++i) {
-		for(j = 0;j < vGroupSize.at(i);++j) {
-			iKeyGiven = 0;
-			iKeyLeft = 0;
-			iKey = 0;
-			for(k = 0;k < viExistVariants.size();++k) {
-				if(viExistVariants.at(k)) {
-					iKeyGiven = iKeyGiven << iMaxNumVariantTypes;
-					iKeyGiven += pData[i][viVariants.at(k) * vGroupSize.at(j) + j];
-				} else {
-					iKeyLeft = iKeyLeft << iMaxNumVariantTypes;
-					iKeyLeft += pData[i][viVariants.at(k) * vGroupSize.at(j) + j];
-				}
-				iKey = iKey << iMaxNumVariantTypes;
-				iKey += pData[i][viVariants.at(k) * vGroupSize.at(j) + j];
-			}
-			// do the contingency table
-			itFrequency = umiiTable.find(iKey);
-			if(itFrequency == umiiTable.end()) {
-				umiiTable[iKey] = idFrequency;
-				piKeyPairs[idFrequency*2] = iKeyLeft;
-				piKeyPairs[idFrequency*2+1] = iKeyGiven;
-				++pdFrequency[idFrequency * iNumGroups + i];
-				++idFrequency;
-			} else {
-				++pdFrequency[itFrequency->second * iNumGroups + i];
-			}
-		}
-	}
 }
 
 void ConditionalChisquare::initilize(int _iMaxVariant, GwasData * _gwasData, char ** _pData,
@@ -65,19 +29,126 @@ void ConditionalChisquare::initilize(int _iMaxVariant, GwasData * _gwasData, cha
 	for(size_t i = 0;i < vGroupSize.size();++i) {
 		iSizeFrequency += vGroupSize.at(i);
 	}
-	pdFrequency = new double[iSizeFrequency * iNumGroups];
+	pdKeyFrequency = new double[iSizeFrequency * iNumGroups];
+	pdLeftKeyFrequency = new double[iSizeFrequency * iNumGroups];
+	pdRightKeyFrequency = new double[iSizeFrequency * iNumGroups];
 	piKeyPairs = new UINT64[iSizeFrequency * 2];
 }
 
-bool ConditionalChisquare::isSignificant(){
+bool ConditionalChisquare::isSignificant() {
 	// try all association types first
 	// if significant, then check conditional chi-square
 	// if also significant, return true after set the p-value and the association type
 
-
 	return false;
 }
 
-void ConditionalChisquare::setVariants(vector<UINT32> & _viVariants, vector<bool> & _viExistVariants){
+void ConditionalChisquare::setVariants(vector<UINT32> & _viVariants, vector<bool> & _viExistVariants) {
 
+}
+
+void ConditionalChisquare::setVariants(vector<UINT32> & _viVariants,
+		vector<vector<Interaction>> & _viExistInteractions) {
+
+}
+
+/**
+ * Private Methods
+ */
+
+double ConditionalChisquare::calculateConditionalChiSquare(vector<UINT32> & _viVariantsLeft,
+		vector<UINT32> & _viVariantsRight, vector<vector<int>> & _vviAssociationTypes) {
+	double dChiSquare = 0;
+	this->collectPartialTablePerLevel(_viVariantsLeft, _viVariantsRight);
+	UINT32 iNum = umiiKeyTable.size(), i, j, k, g, s = _viVariantsLeft.size();
+	UINT64 iKeyGiven, iKeyLeft, iKey;
+	unordered_map<UINT64, UINT32>::const_iterator itFrequency;
+	unordered_map<UINT64, UINT32>::const_iterator itLeftKeyFrequency;
+	unordered_map<UINT64, UINT32>::const_iterator itRightKeyFrequency;
+	double dExpect, dExpectLeft, dExpectRight, dObserved;
+	for(i = 0;i < _vviAssociationTypes.size();++i) {
+		for(j = 0;j < iNum;j++) {
+			dExpectLeft = 0;
+			dExpectRight = 0;
+			dExpect = 0;
+			iKeyLeft = piKeyPairs[i * 2];
+			iKeyGiven = piKeyPairs[i * 2 + 1];
+			iKey = (iKeyLeft << (iMaxNumVariantTypes * s)) + iKeyGiven;
+			itLeftKeyFrequency = umiiLeftKeyTable.find(iKeyLeft);
+			itRightKeyFrequency = umiiRightKeyTable.find(iKeyGiven);
+			itFrequency = umiiKeyTable.find(iKey);
+			for(k = 0;k < _vviAssociationTypes.at(i).size();++k) {
+				g = _vviAssociationTypes.at(i).at(k);
+				dExpectLeft += pdLeftKeyFrequency[itLeftKeyFrequency->second * iNumGroups + g];
+				dExpectRight += pdRightKeyFrequency[itRightKeyFrequency->second * iNumGroups + g];
+				dExpect += vGroupSize.at(g);
+				dObserved += pdLeftKeyFrequency[itFrequency->second * iNumGroups + g];
+			}
+			dExpect = (dExpectLeft * dExpectRight) / dExpect;
+			dChiSquare += (dObserved - dExpect) * (dObserved - dExpect) / dExpect;
+		}
+	}
+	return dChiSquare;
+}
+
+void ConditionalChisquare::collectPartialTablePerLevel(vector<UINT32> & _viVariantsLeft,
+		vector<UINT32> & _viVariantsRight) {
+	UINT64 iKeyGiven, iKeyLeft, iKey;
+	UINT32 i, j, k;
+	memset(pdKeyFrequency, 0, sizeof(double) * iSizeFrequency);
+	memset(pdLeftKeyFrequency, 0, sizeof(double) * iSizeFrequency);
+	memset(pdRightKeyFrequency, 0, sizeof(double) * iSizeFrequency);
+	umiiKeyTable.clear();
+	umiiLeftKeyTable.clear();
+	umiiRightKeyTable.clear();
+	unordered_map<UINT64, UINT32>::const_iterator itFrequency;
+	UINT32 idKeyFrequency = 0, idLeftKeyFrequency = 0, idRightKeyFrequency = 0;
+	for(i = 0;i < iNumGroups;++i) {
+		for(j = 0;j < vGroupSize.at(i);++j) {
+			iKeyGiven = 0;
+			iKeyLeft = 0;
+			iKey = 0;
+			for(k = 0;k < _viVariantsLeft.size();++k) {
+				iKeyLeft = iKeyLeft << iMaxNumVariantTypes;
+				iKeyLeft += pData[i][_viVariantsLeft.at(k) * vGroupSize.at(j) + j];
+				iKey = iKey << iMaxNumVariantTypes;
+				iKey += pData[i][_viVariantsLeft.at(k) * vGroupSize.at(j) + j];
+			}
+			for(k = 0;k < _viVariantsRight.size();++k) {
+				iKeyGiven = iKeyGiven << iMaxNumVariantTypes;
+				iKeyGiven += pData[i][_viVariantsRight.at(k) * vGroupSize.at(j) + j];
+				iKey = iKey << iMaxNumVariantTypes;
+				iKey += pData[i][_viVariantsRight.at(k) * vGroupSize.at(j) + j];
+			}
+			// do the contingency table
+			itFrequency = umiiKeyTable.find(iKey);
+			if(itFrequency == umiiKeyTable.end()) {
+				umiiKeyTable[iKey] = idKeyFrequency;
+				piKeyPairs[idKeyFrequency * 2] = iKeyLeft;
+				piKeyPairs[idKeyFrequency * 2 + 1] = iKeyGiven;
+				++pdKeyFrequency[idKeyFrequency * iNumGroups + i];
+				++idKeyFrequency;
+			} else {
+				++pdKeyFrequency[itFrequency->second * iNumGroups + i];
+			}
+			// for the left key
+			itFrequency = umiiLeftKeyTable.find(iKeyLeft);
+			if(itFrequency == umiiLeftKeyTable.end()) {
+				umiiLeftKeyTable[iKeyLeft] = idLeftKeyFrequency;
+				++pdLeftKeyFrequency[idLeftKeyFrequency * iNumGroups + i];
+				++idLeftKeyFrequency;
+			} else {
+				++pdLeftKeyFrequency[itFrequency->second * iNumGroups + i];
+			}
+			// for the right key
+			itFrequency = umiiRightKeyTable.find(iKeyLeft);
+			if(itFrequency == umiiRightKeyTable.end()) {
+				umiiRightKeyTable[iKeyGiven] = idRightKeyFrequency;
+				++pdRightKeyFrequency[idRightKeyFrequency * iNumGroups + i];
+				++idRightKeyFrequency;
+			} else {
+				++pdRightKeyFrequency[itFrequency->second * iNumGroups + i];
+			}
+		}
+	}
 }

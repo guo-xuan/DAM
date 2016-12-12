@@ -21,7 +21,9 @@ AssociationEvaluation::~AssociationEvaluation() {
 }
 
 /**
- *
+ *_viVariants: candidate variants from MCMC
+ *_gwasData: the input gwas data
+ *_iMaxInteractionSize: the highest order for the interaction or the association
  */
 void AssociationEvaluation::initialize(vector<UINT32> & _viVariants, GwasData * _gwasData,
 		UINT32 _iMaxInteractionSize) {
@@ -57,6 +59,9 @@ void AssociationEvaluation::initialize(vector<UINT32> & _viVariants, GwasData * 
 	}
 }
 
+/**
+ * step-wisely try the association and interaction test
+ */
 void AssociationEvaluation::Evaluation() {
 	UINT32 i = 0, j, iNum;
 
@@ -82,6 +87,7 @@ void AssociationEvaluation::Evaluation() {
 				if(vChiSquareKits.at(thread_id).isSignificant()){
 					// set the association type, the chi-square value or p-value
 
+					//
 				}
 			}
 		}
