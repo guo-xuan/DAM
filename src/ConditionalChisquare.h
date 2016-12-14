@@ -12,6 +12,10 @@
 #include "Config.h"
 #include <unordered_map>
 #include <utility>
+#include "AssociationEvaluation.h"
+#include "GammaXG.h"
+
+struct Interaction;
 
 class ConditionalChisquare {
 public:
@@ -21,7 +25,7 @@ public:
 	void initilize(int _iMaxVariant, GwasData * _gwasData, char ** _pData, UINT32 _iMaxNumVariantTypes);
 	bool isSignificant();
 	void setVariants(vector<UINT32> & _viVariants, vector<bool> & _viExistVariants);
-	void setVariants(vector<UINT32> & _viVariants, vector<vector<Interaction>> & _viExistInteractions);
+	void setVariants(vector<UINT32> & _viVariants, vector<vector<Interaction> > & _viExistInteractions);
 
 
 private:

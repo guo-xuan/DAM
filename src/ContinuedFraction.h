@@ -10,38 +10,12 @@
 
 #include <climits>
 #include <limits>
+#include <math.h>
 
 class ContinuedFraction {
 public:
 	ContinuedFraction();
 	virtual ~ContinuedFraction();
-
-	/**
-	 * Evaluates the continued fraction at the value x.
-	 * @param x the evaluation point.
-	 * @return the value of the continued fraction evaluated at x.
-	 * @throws ConvergenceException if the algorithm fails to converge.
-	 */
-	double evaluate(double x);
-
-	/**
-	 * Evaluates the continued fraction at the value x.
-	 * @param x the evaluation point.
-	 * @param epsilon maximum error allowed.
-	 * @return the value of the continued fraction evaluated at x.
-	 * @throws ConvergenceException if the algorithm fails to converge.
-	 */
-	double evaluate(double x, double epsilon);
-
-	/**
-	 * Evaluates the continued fraction at the value x.
-	 * @param x the evaluation point.
-	 * @param maxIterations maximum number of convergents
-	 * @return the value of the continued fraction evaluated at x.
-	 * @throws ConvergenceException if the algorithm fails to converge.
-	 * @throws MaxCountExceededException if maximal number of iterations is reached
-	 */
-	double evaluate(double x, int maxIterations);
 
 	/**
 	 * Evaluates the continued fraction at the value x.
@@ -66,7 +40,7 @@ public:
 	 * @throws ConvergenceException if the algorithm fails to converge.
 	 * @throws MaxCountExceededException if maximal number of iterations is reached
 	 */
-	double evaluate(double x, double epsilon, int maxIterations);
+	double evaluate(double x, double epsilon, int maxIterations, double a_int);
 
 private:
 	/** Maximum allowed numerical error. */
@@ -80,7 +54,7 @@ protected:
 	 * @param x the evaluation point.
 	 * @return the n-th a coefficient.
 	 */
-	virtual double getA(int n, double x) = 0;
+	virtual double getA(int n, double x, double a_int) = 0;
 
 	/**
 	 * Access the n-th b coefficient of the continued fraction.  Since b can be
@@ -89,7 +63,7 @@ protected:
 	 * @param x the evaluation point.
 	 * @return the n-th b coefficient.
 	 */
-	virtual double getB(int n, double x) = 0;
+	virtual double getB(int n, double x, double a_int) = 0;
 };
 
 #endif /* CONTINUEDFRACTION_H_ */

@@ -130,6 +130,100 @@ public:
 	 */
 	static double regularizedGammaQ(const double a, double x, double epsilon, int maxIterations);
 
+	/**
+	 * <p>Computes the digamma function of x.</p>
+	 *
+	 * <p>This is an independently written implementation of the algorithm described in
+	 * Jose Bernardo, Algorithm AS 103: Psi (Digamma) Function, Applied Statistics, 1976.</p>
+	 *
+	 * <p>Some of the constants have been changed to increase accuracy at the moderate expense
+	 * of run-time.  The result should be accurate to within 10^-8 absolute tolerance for
+	 * x >= 10^-5 and within 10^-8 relative tolerance for x > 0.</p>
+	 *
+	 * <p>Performance for large negative values of x will be quite expensive (proportional to
+	 * |x|).  Accuracy for negative values of x should be about 10^-8 absolute for results
+	 * less than 10^5 and 10^-8 relative for results larger than that.</p>
+	 *
+	 * @param x Argument.
+	 * @return digamma(x) to within 10-8 relative or absolute error whichever is smaller.
+	 * @see <a href="http://en.wikipedia.org/wiki/Digamma_function">Digamma</a>
+	 * @see <a href="http://www.uv.es/~bernardo/1976AppStatist.pdf">Bernardo&apos;s original article </a>
+	 * @since 2.0
+	 */
+	static double digamma(double x);
+
+	/**
+	 * Computes the trigamma function of x.
+	 * This function is derived by taking the derivative of the implementation
+	 * of digamma.
+	 *
+	 * @param x Argument.
+	 * @return trigamma(x) to within 10-8 relative or absolute error whichever is smaller
+	 * @see <a href="http://en.wikipedia.org/wiki/Trigamma_function">Trigamma</a>
+	 * @see Gamma#digamma(double)
+	 * @since 2.0
+	 */
+	static double trigamma(double x);
+
+	/**
+	 * <p>
+	 * Returns the Lanczos approximation used to compute the gamma function.
+	 * The Lanczos approximation is related to the Gamma function by the
+	 * following equation
+	 * <center>
+	 * {@code gamma(x) = sqrt(2 * pi) / x * (x + g + 0.5) ^ (x + 0.5)
+	 *                   * exp(-x - g - 0.5) * lanczos(x)},
+	 * </center>
+	 * where {@code g} is the Lanczos constant.
+	 * </p>
+	 *
+	 * @param x Argument.
+	 * @return The Lanczos approximation.
+	 * @see <a href="http://mathworld.wolfram.com/LanczosApproximation.html">Lanczos Approximation</a>
+	 * equations (1) through (5), and Paul Godfrey's
+	 * <a href="http://my.fit.edu/~gabdo/gamma.txt">Note on the computation
+	 * of the convergent Lanczos complex Gamma approximation</a>
+	 * @since 3.1
+	 */
+	static double lanczos(const double x);
+
+	/**
+	 * Returns the value of 1 / &Gamma;(1 + x) - 1 for -0&#46;5 &le; x &le;
+	 * 1&#46;5. This implementation is based on the double precision
+	 * implementation in the <em>NSWC Library of Mathematics Subroutines</em>,
+	 * {@code DGAM1}.
+	 *
+	 * @param x Argument.
+	 * @return The value of {@code 1.0 / Gamma(1.0 + x) - 1.0}.
+	 * @throws NumberIsTooSmallException if {@code x < -0.5}
+	 * @throws NumberIsTooLargeException if {@code x > 1.5}
+	 * @since 3.1
+	 */
+	static double invGamma1pm1(const double x);
+
+	/**
+	 * Returns the value of log &Gamma;(1 + x) for -0&#46;5 &le; x &le; 1&#46;5.
+	 * This implementation is based on the double precision implementation in
+	 * the <em>NSWC Library of Mathematics Subroutines</em>, {@code DGMLN1}.
+	 *
+	 * @param x Argument.
+	 * @return The value of {@code log(Gamma(1 + x))}.
+	 * @throws NumberIsTooSmallException if {@code x < -0.5}.
+	 * @throws NumberIsTooLargeException if {@code x > 1.5}.
+	 * @since 3.1
+	 */
+	static double logGamma1p(const double x);
+
+	/**
+	 * Returns the value of Γ(x). Based on the <em>NSWC Library of
+	 * Mathematics Subroutines</em> double precision implementation,
+	 * {@code DGAMMA}.
+	 *
+	 * @param x Argument.
+	 * @return the value of {@code Gamma(x)}.
+	 * @since 3.1
+	 */
+	static double gamma(const double x);
 private:
 	/** Maximum allowed numerical error. */
 	static const double DEFAULT_EPSILON;

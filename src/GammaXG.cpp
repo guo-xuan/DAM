@@ -67,7 +67,7 @@ double GammaXG::logGamma(double x) {
 	double ret;
 
 	if(isnan(x) || (x <= 0.0)) {
-		ret = nan;
+		ret = NAN;
 	} else if(x < 0.5) {
 		return logGamma1p(x) - log(x);
 	} else if(x <= 2.5) {
@@ -96,7 +96,7 @@ double GammaXG::regularizedGammaP(double a, double x, double epsilon, int maxIte
 	double ret = 0;
 
 	if(isnan(a) || isnan(x) || (a <= 0.0) || (x < 0.0)) {
-		ret = nan;
+		ret = NAN;
 	} else if(x == 0.0) {
 		ret = 0.0;
 	} else if(x >= a + 1) {
@@ -108,7 +108,7 @@ double GammaXG::regularizedGammaP(double a, double x, double epsilon, int maxIte
 		double n = 0.0; // current element index
 		double an = 1.0 / a; // n-th element in the series
 		double sum = an; // partial sum
-		while(abs(an / sum) > epsilon && n < maxIterations && sum < INFINITY) {
+		while(fabs(an / sum) > epsilon && n < maxIterations && sum < INFINITY) {
 			// compute next element in the series
 			n = n + 1.0;
 			an = an * (x / (a + n));
@@ -136,7 +136,7 @@ double GammaXG::regularizedGammaQ(const double a, double x, double epsilon, int 
 	double ret;
 
 	if(isnan(a) || isnan(x) || (a <= 0.0) || (x < 0.0)) {
-		ret = nan;
+		ret = NAN;
 	} else if(x == 0.0) {
 		ret = 1.0;
 	} else if(x < a + 1.0) {
@@ -145,24 +145,209 @@ double GammaXG::regularizedGammaQ(const double a, double x, double epsilon, int 
 		ret = 1.0 - regularizedGammaP(a, x, epsilon, maxIterations);
 	} else {
 		// create continued fraction
-		ContinuedFraction cf = ContinuedFraction()
-		{double getA(int n, double x) {
-			return ((2.0 * n) + 1.0) - a + x;
-		}
+		class : public ContinuedFraction {
+		protected:
+			double getA(int n, double x, double a_int) {
+				return ((2.0 * n) + 1.0) - a_int + x;
+			};
 
-		double getB(int n, double x) {
-			return n * (a - n);
-		}
-	};
+			double getB(int n, double x, double a_int) {
+				return n * (a_int - n);
+			};
+		} cf;
 
-	ret = 1.0 / cf.evaluate(x, epsilon, maxIterations);
-	double loggammaa = -logGamma(a);
-	double summm = (a * log(x));
-	summm = summm - x - loggammaa;
-	summm = exp(summm);
-	summm = summm * ret;
-	ret = exp(-x + (a * log(x)) - logGamma(a)) * ret;
+		ret = 1.0 / cf.evaluate(x, epsilon, maxIterations, a);
+		double loggammaa = -logGamma(a);
+		double summm = (a * log(x));
+		summm = summm - x - loggammaa;
+		summm = exp(summm);
+		summm = summm * ret;
+		ret = exp(-x + (a * log(x)) - logGamma(a)) * ret;
+	}
+
+	return ret;
 }
 
-return ret;
+double GammaXG::digamma(double x) {
+	if(x > 0 && x <= S_LIMIT) {
+		// use method 5 from Bernardo AS103
+		// accurate to O(x)
+		return -GAMMA - 1 / x;
+	}
+
+	if(x >= C_LIMIT) {
+		// use method 4 (accurate to O(1/x^8)
+		double inv = 1 / (x * x);
+		//            1       1        1         1
+		// log(x) -  --- - ------ + ------- - -------
+		//           2 x   12 x^2   120 x^4   252 x^6
+		return log(x) - 0.5 / x - inv * ((1.0 / 12) + inv * (1.0 / 120 - inv / 252));
+	}
+
+	return digamma(x + 1) - 1 / x;
+}
+
+double GammaXG::trigamma(double x) {
+	if(x > 0 && x <= S_LIMIT) {
+		return 1 / (x * x);
+	}
+
+	if(x >= C_LIMIT) {
+		double inv = 1 / (x * x);
+		//  1    1      1       1       1
+		//  - + ---- + ---- - ----- + -----
+		//  x      2      3       5       7
+		//      2 x    6 x    30 x    42 x
+		return 1 / x + inv / 2 + inv / x * (1.0 / 6 - inv * (1.0 / 30 + inv / 42));
+	}
+
+	return trigamma(x + 1) + 1 / (x * x);
+}
+
+double GammaXG::lanczos(const double x) {
+	double sum = 0.0;
+	for(int i = (sizeof(LANCZOS) / sizeof(*LANCZOS)) - 1;i > 0;--i) {
+		sum = sum + (LANCZOS[i] / (x + i));
+	}
+	return sum + LANCZOS[0];
+}
+
+double GammaXG::invGamma1pm1(const double x) {
+
+	double ret;
+	const double t = x <= 0.5 ? x : (x - 0.5) - 0.5;
+	if(t < 0.0) {
+		const double a = INV_GAMMA1P_M1_A0 + t * INV_GAMMA1P_M1_A1;
+		double b = INV_GAMMA1P_M1_B8;
+		b = INV_GAMMA1P_M1_B7 + t * b;
+		b = INV_GAMMA1P_M1_B6 + t * b;
+		b = INV_GAMMA1P_M1_B5 + t * b;
+		b = INV_GAMMA1P_M1_B4 + t * b;
+		b = INV_GAMMA1P_M1_B3 + t * b;
+		b = INV_GAMMA1P_M1_B2 + t * b;
+		b = INV_GAMMA1P_M1_B1 + t * b;
+		b = 1.0 + t * b;
+
+		double c = INV_GAMMA1P_M1_C13 + t * (a / b);
+		c = INV_GAMMA1P_M1_C12 + t * c;
+		c = INV_GAMMA1P_M1_C11 + t * c;
+		c = INV_GAMMA1P_M1_C10 + t * c;
+		c = INV_GAMMA1P_M1_C9 + t * c;
+		c = INV_GAMMA1P_M1_C8 + t * c;
+		c = INV_GAMMA1P_M1_C7 + t * c;
+		c = INV_GAMMA1P_M1_C6 + t * c;
+		c = INV_GAMMA1P_M1_C5 + t * c;
+		c = INV_GAMMA1P_M1_C4 + t * c;
+		c = INV_GAMMA1P_M1_C3 + t * c;
+		c = INV_GAMMA1P_M1_C2 + t * c;
+		c = INV_GAMMA1P_M1_C1 + t * c;
+		c = INV_GAMMA1P_M1_C + t * c;
+		if(x > 0.5) {
+			ret = t * c / x;
+		} else {
+			ret = x * ((c + 0.5) + 0.5);
+		}
+	} else {
+		double p = INV_GAMMA1P_M1_P6;
+		p = INV_GAMMA1P_M1_P5 + t * p;
+		p = INV_GAMMA1P_M1_P4 + t * p;
+		p = INV_GAMMA1P_M1_P3 + t * p;
+		p = INV_GAMMA1P_M1_P2 + t * p;
+		p = INV_GAMMA1P_M1_P1 + t * p;
+		p = INV_GAMMA1P_M1_P0 + t * p;
+
+		double q = INV_GAMMA1P_M1_Q4;
+		q = INV_GAMMA1P_M1_Q3 + t * q;
+		q = INV_GAMMA1P_M1_Q2 + t * q;
+		q = INV_GAMMA1P_M1_Q1 + t * q;
+		q = 1.0 + t * q;
+
+		double c = INV_GAMMA1P_M1_C13 + (p / q) * t;
+		c = INV_GAMMA1P_M1_C12 + t * c;
+		c = INV_GAMMA1P_M1_C11 + t * c;
+		c = INV_GAMMA1P_M1_C10 + t * c;
+		c = INV_GAMMA1P_M1_C9 + t * c;
+		c = INV_GAMMA1P_M1_C8 + t * c;
+		c = INV_GAMMA1P_M1_C7 + t * c;
+		c = INV_GAMMA1P_M1_C6 + t * c;
+		c = INV_GAMMA1P_M1_C5 + t * c;
+		c = INV_GAMMA1P_M1_C4 + t * c;
+		c = INV_GAMMA1P_M1_C3 + t * c;
+		c = INV_GAMMA1P_M1_C2 + t * c;
+		c = INV_GAMMA1P_M1_C1 + t * c;
+		c = INV_GAMMA1P_M1_C0 + t * c;
+
+		if(x > 0.5) {
+			ret = (t / x) * ((c - 0.5) - 0.5);
+		} else {
+			ret = x * c;
+		}
+	}
+
+	return ret;
+}
+
+double GammaXG::logGamma1p(const double x) {
+	return -log1p(invGamma1pm1(x));
+}
+
+double GammaXG::gamma(const double x) {
+
+	if((x == rint(x)) && (x <= 0.0)) {
+		return NAN;
+	}
+
+	double ret;
+	const double absX = fabs(x);
+	if(absX <= 20.0) {
+		if(x >= 1.0) {
+			/*
+			 * From the recurrence relation
+			 * Gamma(x) = (x - 1) * ... * (x - n) * Gamma(x - n),
+			 * then
+			 * Gamma(t) = 1 / [1 + invGamma1pm1(t - 1)],
+			 * where t = x - n. This means that t must satisfy
+			 * -0.5 <= t - 1 <= 1.5.
+			 */
+			double prod = 1.0;
+			double t = x;
+			while(t > 2.5) {
+				t = t - 1.0;
+				prod *= t;
+			}
+			ret = prod / (1.0 + invGamma1pm1(t - 1.0));
+		} else {
+			/*
+			 * From the recurrence relation
+			 * Gamma(x) = Gamma(x + n + 1) / [x * (x + 1) * ... * (x + n)]
+			 * then
+			 * Gamma(x + n + 1) = 1 / [1 + invGamma1pm1(x + n)],
+			 * which requires -0.5 <= x + n <= 1.5.
+			 */
+			double prod = x;
+			double t = x;
+			while(t < -0.5) {
+				t = t + 1.0;
+				prod *= t;
+			}
+			ret = 1.0 / (prod * (1.0 + invGamma1pm1(t)));
+		}
+	} else {
+		const double y = absX + LANCZOS_G + 0.5;
+		const double gammaAbs = SQRT_TWO_PI / x * pow(y, absX + 0.5) * exp(-y) * lanczos(absX);
+		if(x > 0.0) {
+			ret = gammaAbs;
+		} else {
+			/*
+			 * From the reflection formula
+			 * Gamma(x) * Gamma(1 - x) * sin(pi * x) = pi,
+			 * and the recurrence relation
+			 * Gamma(1 - x) = -x * Gamma(-x),
+			 * it is found
+			 * Gamma(x) = -pi / [x * sin(pi * x) * Gamma(-x)].
+			 */
+			ret = -M_PI / (x * sin(M_PI * x) * gammaAbs);
+		}
+	}
+	return ret;
 }

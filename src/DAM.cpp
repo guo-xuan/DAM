@@ -13,6 +13,7 @@
 #include "GwasData.h"
 #include "MCMC.h"
 #include "AssociationEvaluation.h"
+#include "GammaXG.h"
 
 using namespace std;
 

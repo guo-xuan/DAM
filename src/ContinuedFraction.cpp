@@ -17,24 +17,12 @@ ContinuedFraction::~ContinuedFraction() {
 	// TODO Auto-generated destructor stub
 }
 
-double ContinuedFraction::evaluate(double x) {
-	return evaluate(x, DEFAULT_EPSILON, LONG_MAX);
-}
-
-double ContinuedFraction::evaluate(double x, double epsilon) {
-	return evaluate(x, epsilon, LONG_MAX);
-}
-
-double ContinuedFraction::evaluate(double x, int maxIterations) {
-	return evaluate(x, DEFAULT_EPSILON, maxIterations);
-}
-
-double ContinuedFraction::evaluate(double x, double epsilon, int maxIterations) {
+double ContinuedFraction::evaluate(double x, double epsilon, int maxIterations, double a_int) {
 	const double small = 1e-50;
-	double hPrev = getA(0, x);
+	double hPrev = getA(0, x, a_int);
 
 	// use the value of small as epsilon criteria for zero checks
-	if(abs(hPrev) <= small) {
+	if(fabs(hPrev) <= small) {
 		hPrev = small;
 	}
 
@@ -44,15 +32,15 @@ double ContinuedFraction::evaluate(double x, double epsilon, int maxIterations) 
 	double hN = hPrev;
 
 	while(n < maxIterations) {
-		const double a = getA(n, x);
-		const double b = getB(n, x);
+		const double a = getA(n, x, a_int);
+		const double b = getB(n, x, a_int);
 
 		double dN = a + b * dPrev;
-		if(abs(dN) <= small) {
+		if(fabs(dN) <= small) {
 			dN = small;
 		}
 		double cN = a + b / cPrev;
-		if(abs(cN) <= small) {
+		if(fabs(cN) <= small) {
 			cN = small;
 		}
 
@@ -60,7 +48,7 @@ double ContinuedFraction::evaluate(double x, double epsilon, int maxIterations) 
 		const double deltaN = cN * dN;
 		hN = hPrev * deltaN;
 
-		if(abs(deltaN - 1.0) < epsilon) {
+		if(fabs(deltaN - 1.0) < epsilon) {
 			break;
 		}
 

@@ -15,6 +15,8 @@
 
 #include <unordered_set>
 
+class ConditionalChisquare;
+
 struct Interaction {
 	vector<UINT32> viInnerVariantIds;
 	UINT32 iAssociationType;

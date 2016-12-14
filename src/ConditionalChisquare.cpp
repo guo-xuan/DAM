@@ -48,13 +48,29 @@ void ConditionalChisquare::setVariants(vector<UINT32> & _viVariants, vector<bool
 }
 
 void ConditionalChisquare::setVariants(vector<UINT32> & _viVariants,
-		vector<vector<Interaction>> & _viExistInteractions) {
+		vector<vector<Interaction> > & _viExistInteractions) {
 
 }
 
 /**
  * Private Methods
  */
+
+double pValue(double _degree, double _critical) {
+	double p = 0;
+	if(_critical / 2 > (_degree / 2 + 1)) {
+		p = GammaXG::regularizedGammaQ(_degree / 2, _critical / 2, 10e-50, INT_MAX);
+	} else {
+		p = 1 - GammaXG::regularizedGammaP(_degree / 2, _critical / 2, 10e-50, INT_MAX);
+	}
+	return p;
+}
+
+double ConditionalChisquare::calculateChiSquare(){
+	double dChiSquare = 0;
+
+	return dChiSquare;
+}
 
 double ConditionalChisquare::calculateConditionalChiSquare(vector<UINT32> & _viVariantsLeft,
 		vector<UINT32> & _viVariantsRight, vector<vector<int>> & _vviAssociationTypes) {
@@ -66,6 +82,7 @@ double ConditionalChisquare::calculateConditionalChiSquare(vector<UINT32> & _viV
 	unordered_map<UINT64, UINT32>::const_iterator itLeftKeyFrequency;
 	unordered_map<UINT64, UINT32>::const_iterator itRightKeyFrequency;
 	double dExpect, dExpectLeft, dExpectRight, dObserved;
+	double dNumRow = 0, dNumCol = 0, df = 0;
 	for(i = 0;i < _vviAssociationTypes.size();++i) {
 		for(j = 0;j < iNum;j++) {
 			dExpectLeft = 0;
@@ -84,11 +101,21 @@ double ConditionalChisquare::calculateConditionalChiSquare(vector<UINT32> & _viV
 				dExpect += vGroupSize.at(g);
 				dObserved += pdLeftKeyFrequency[itFrequency->second * iNumGroups + g];
 			}
+			if(dExpectLeft != 0) {
+				dNumRow++;
+			}
+			if(dExpectRight != 0) {
+				dNumCol++;
+			}
 			dExpect = (dExpectLeft * dExpectRight) / dExpect;
+			if(dExpect == 0){
+				continue;
+			}
 			dChiSquare += (dObserved - dExpect) * (dObserved - dExpect) / dExpect;
 		}
 	}
-	return dChiSquare;
+	df = (dNumRow - 1) * (dNumCol - 1);
+	return pValue(df, dChiSquare);
 }
 
 void ConditionalChisquare::collectPartialTablePerLevel(vector<UINT32> & _viVariantsLeft,
