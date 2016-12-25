@@ -20,7 +20,9 @@ class ConditionalChisquare;
 struct Interaction {
 	vector<UINT32> viInnerVariantIds;
 	UINT32 iAssociationType;
-
+	double dpValue;
+	double dMinpValueConditional;
+	double dMaxpValueConditional;
 };
 
 class AssociationEvaluation {
@@ -33,6 +35,8 @@ public:
 	void WriteResults(string & _sFilename);
 
 private:
+
+	GwasData * pgwasData;
 	/**
 	 * level 1: group
 	 * level 2: variant

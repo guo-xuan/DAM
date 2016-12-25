@@ -31,6 +31,7 @@ void AssociationEvaluation::initialize(vector<UINT32> & _viVariants, GwasData * 
 	iNumVariantCandidates = viVariants.size();
 	iNumGroups = _gwasData->iNumGroups;
 	viNumSamplesPerGroup = _gwasData->viNumSamplesPerGroup;
+	pgwasData = _gwasData;
 	pData = new char*[iNumGroups];
 	for(UINT32 i = 0;i < iNumGroups;++i) {
 		pData[i] = new char[viNumSamplesPerGroup.at(i) * _viVariants.size()];
@@ -44,7 +45,7 @@ void AssociationEvaluation::initialize(vector<UINT32> & _viVariants, GwasData * 
 		for(UINT32 j = 0;j < iNumGroups;++j) {
 			_gwasData->getValue(_viVariants.at(i), j, vi);
 			for(UINT32 k = 0;k < vi.size();++k) {
-				pData[j][i * viNumSamplesPerGroup.at(i) + k] = vi.at(k);
+				pData[j][i * viNumSamplesPerGroup.at(j) + k] = vi.at(k);
 			}
 		}
 	}
@@ -78,24 +79,56 @@ void AssociationEvaluation::Evaluation() {
 			if(vInteractionCandidates.empty()) {
 				break;
 			}
+			for(UINT32 k = 0;k < iMaxNumThreads;++k) {
+				vChiSquareKits.at(k).clean();
+			}
+
 			// openMP parallel evaluation interaction
 			iNum = vInteractionCandidates.size();
-#pragma omp for schedule(guided)
+// #pragma omp for schedule(guided)
 			for(UINT32 k = 0;k < iNum;++k) {
 				int thread_id = omp_get_thread_num();
-				vChiSquareKits.at(thread_id).setVariants(vInteractionCandidates.at(k).viInnerVariantIds, viAlreadySelectedVariants);
-				if(vChiSquareKits.at(thread_id).isSignificant()){
-					// set the association type, the chi-square value or p-value
+				vChiSquareKits.at(thread_id).setVariants(vInteractionCandidates.at(k).viInnerVariantIds);
+				vChiSquareKits.at(thread_id).calculateSignificance();
+			}
 
-					//
+			for(UINT32 k = 0;k < iMaxNumThreads;++k) {
+				vector<Interaction> & vi = vChiSquareKits.at(k).getInteractions();
+				for(int l = 0;l < (int) vi.size();++l) {
+					vInteractions.push_back(vi.at(l));
 				}
 			}
 		}
 	}
 }
 
-void AssociationEvaluation::WriteResults(string & _sFilename){
-
+void AssociationEvaluation::WriteResults(string & _sFilename) {
+	ofstream outputFile;
+	outputFile.open(_sFilename.c_str());
+	int i, j, k;
+	for(i = 0;i < (int) vInteractions.size();++i) {
+		outputFile << "Interaction " << i << endl;
+		for(j = 0;j < (int) vInteractions.at(i).viInnerVariantIds.size();++j) {
+			outputFile << "\t" << pgwasData->getVariantName(viVariants.at(vInteractions.at(i).viInnerVariantIds.at(j)))
+					<< endl;
+		}
+		outputFile << "\tGroup Partition: ";
+		for(j = 0;j < (int) vvviHyperGroup.at(vInteractions.at(i).iAssociationType).size();++j) {
+			outputFile << "( ";
+			for(k = 0;k < (int) vvviHyperGroup.at(vInteractions.at(i).iAssociationType).at(j).size();++k) {
+				outputFile
+						<< pgwasData->viGroupNamesSet.at(
+								vvviHyperGroup.at(vInteractions.at(i).iAssociationType).at(j).at(k)) << " ";
+			}
+			outputFile << ") ";
+		}
+		outputFile << endl;
+		outputFile << "\tP Value: " << vInteractions.at(i).dpValue << endl;
+		outputFile << "\tMinimum Conditional P Value: " << vInteractions.at(i).dMinpValueConditional << endl;
+		outputFile << "\tMaximum Conditional P Value: " << vInteractions.at(i).dMaxpValueConditional << endl;
+		outputFile << endl;
+	}
+	outputFile.close();
 }
 
 /**

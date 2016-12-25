@@ -92,7 +92,7 @@ double GammaXG::regularizedGammaP(double a, double x) {
 	return regularizedGammaP(a, x, DEFAULT_EPSILON, LONG_MAX);
 }
 
-double GammaXG::regularizedGammaP(double a, double x, double epsilon, int maxIterations) {
+double GammaXG::regularizedGammaP(double a, double x, double epsilon, long maxIterations) {
 	double ret = 0;
 
 	if(isnan(a) || isnan(x) || (a <= 0.0) || (x < 0.0)) {
@@ -132,7 +132,7 @@ double GammaXG::regularizedGammaQ(double a, double x) {
 	return regularizedGammaQ(a, x, DEFAULT_EPSILON, LONG_MAX);
 }
 
-double GammaXG::regularizedGammaQ(const double a, double x, double epsilon, int maxIterations) {
+double GammaXG::regularizedGammaQ(const double a, double x, double epsilon, long maxIterations) {
 	double ret;
 
 	if(isnan(a) || isnan(x) || (a <= 0.0) || (x < 0.0)) {

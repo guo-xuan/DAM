@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
 
 	//string sFileOut = "test.txt";
 	//gwasData->writeOutput(sFileOut);
-
+	/**
 	// set the gwas data in the config and also MCMC
 	MCMC::setupMCMC(gwasData);
 	// create chains
@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 		vMcmc.at(i)->runMCMC();
 	}
 	// sum up all the frequencies from all chains, choose the top 200 variants for next phase
-	vector<UINT32> viVariants;
+	vector<UINT32> viVariants = {1, 2, 3, 4, 5, 6};
 
 	//free memory
 	delete gwasData;
@@ -70,7 +70,8 @@ int main(int argc, char **argv) {
 	}
 
 	MCMC::destroyMCMC();
-
+	**/
+	vector<UINT32> viVariants = {1, 2, 3, 4, 5, 6};
 	// step-wise evaluation
 	AssociationEvaluation * pAssociationEvaluation = new AssociationEvaluation();
 	pAssociationEvaluation->initialize(viVariants, gwasData, Config::iMaxVariantsInInteraction);

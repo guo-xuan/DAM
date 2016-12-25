@@ -87,6 +87,10 @@ vector<vector<vector<UINT32>>>* GwasData::getVariantHyperGroupOccurrence(UINT32 
 	return vvData.at(_iVariantIndex).getHyperGroupOccurrence();
 }
 
+string GwasData::getVariantName(UINT32 _iVariantIndex){
+	return vvData.at(_iVariantIndex).sVariantName;
+}
+
 void GwasData::getVariantNearby(UINT32 _iVariantIndex, UINT32 _distance, vector<UINT32> & _vi) {
 	_vi.clear();
 	int iIndex = _iVariantIndex + 1;

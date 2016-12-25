@@ -91,7 +91,7 @@ public:
 	 * @return the regularized gamma function P(a, x)
 	 * @throws MaxCountExceededException if the algorithm fails to converge.
 	 */
-	static double regularizedGammaP(double a, double x, double epsilon, int maxIterations);
+	static double regularizedGammaP(double a, double x, double epsilon, long maxIterations);
 
 	/**
 	 * Returns the regularized gamma function Q(a, x) = 1 - P(a, x).
@@ -128,7 +128,7 @@ public:
 	 * @return the regularized gamma function P(a, x)
 	 * @throws MaxCountExceededException if the algorithm fails to converge.
 	 */
-	static double regularizedGammaQ(const double a, double x, double epsilon, int maxIterations);
+	static double regularizedGammaQ(const double a, double x, double epsilon, long maxIterations);
 
 	/**
 	 * <p>Computes the digamma function of x.</p>
