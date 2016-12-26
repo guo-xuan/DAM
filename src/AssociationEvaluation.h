@@ -62,6 +62,8 @@ private:
 	UINT32 iMaxNumVariantTypes;
 	vector<bool> viAlreadySelectedVariants;
 
+	UINT32 iTotalTesting;
+
 
 	bool combinationGenerator(int _iSize, int _iNumCandidate, vector<Interaction> & _vInteraction, int _iBatchSize, vector<UINT32> & _vCombination);
 };

@@ -68,6 +68,8 @@ private:
 
 	// for splitting the variants two left and right
 	unordered_set<int> siCodeSet;
+	unordered_set<UINT32> siLeftKeySet;
+	unordered_set<UINT32> siRightKeySet;
 	int iCodeUpperBound;
 	int iCode;
 	int iCodeGroup;

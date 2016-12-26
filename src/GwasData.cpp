@@ -261,7 +261,7 @@ bool GwasData::loadDataParallel(vector<string> & _vsInputFileList) {
 				}
 			}
 			iVariantIndex += chunkCounter;
-			cout << "Reading variants %" << 100 * ((double) iVariantIndex) / ((double) iNumVariants) << "\r";
+			cout << "Reading variants " << 100 * ((double) iVariantIndex) / ((double) iNumVariants) << "%\r";
 		}
 		myFile.close();
 	}

@@ -13,6 +13,11 @@ ConditionalChisquare::ConditionalChisquare() {
 	pdRightKeyFrequency = NULL;
 	piKeyPairs = NULL;
 	dCriticalPvalue = 0.05;
+	iTotalVariants = 0;
+	pData = NULL;
+	iCode = 0;
+	iCodeGroup = 0;
+	iCodeUpperBound = 0;
 }
 
 ConditionalChisquare::~ConditionalChisquare() {
@@ -48,11 +53,14 @@ void ConditionalChisquare::initilize(int _iMaxVariant, GwasData * _gwasData, cha
 	iMaxNumVariantTypes = _iMaxNumVariantTypes;
 	iSizeFrequency = 0;
 	for(size_t i = 0;i < vGroupSize.size();++i) {
-		iSizeFrequency += vGroupSize.at(i);
+		if(iSizeFrequency < vGroupSize.at(i)){
+			iSizeFrequency = vGroupSize.at(i);
+		}
 	}
-	pdKeyFrequency = new double[iSizeFrequency * iNumGroups];
-	pdLeftKeyFrequency = new double[iSizeFrequency * iNumGroups];
-	pdRightKeyFrequency = new double[iSizeFrequency * iNumGroups];
+	iSizeFrequency = iSizeFrequency * iNumGroups;
+	pdKeyFrequency = new double[iSizeFrequency];
+	pdLeftKeyFrequency = new double[iSizeFrequency];
+	pdRightKeyFrequency = new double[iSizeFrequency];
 	piKeyPairs = new UINT64[iSizeFrequency * 2];
 	vvviHyperGroup = HyperGroup::getHyperGroup(iNumGroups);
 }
@@ -61,39 +69,44 @@ vector<Interaction> & ConditionalChisquare::calculateSignificance() {
 	// try all association types first
 	// if significant, then check conditional chi-square (all combination of split ways)
 	// if also significant, return true after set the p-value and the association type
-	int i = 0;
-	double dpValue = 0, dpValueConditional, dMinValueConditional = 100, dMaxValueConditional = 0;
+	int i = 0, iAssociationType = -1;
+	double dpValue = 0, dpValueConditional, dMinValueConditional = MINPVALUE, dMaxValueConditional = MAXPVALUE;
+	double dpMinValue = 100;
 	bool isConditionalSignificant = true;
 	for(i = 1;i < (int) vvviHyperGroup.size();++i) {
 		dpValue = calculateChiSquare(viVariants, vvviHyperGroup.at(i));
-		dMinValueConditional = 100;
-		dMaxValueConditional = 0;
-		if(dpValue * dNumComparisons < dCriticalPvalue) { // significant
-			this->setVariantSplit(viVariants);
-			isConditionalSignificant = true;
-			while(getNextVariantSplit(viVariantsLeft, viVariantsRight)) {
-				dpValueConditional = calculateConditionalChiSquare(viVariantsLeft, viVariantsRight,
-						vvviHyperGroup.at(i));
-				// check if this conditional chi-square test is significant
-				if(dpValueConditional * dNumComparisons > dCriticalPvalue) { // non-significant
-					isConditionalSignificant = false;
-					break;
-				}
-				if(dpValueConditional < dMinValueConditional) {
-					dMinValueConditional = dpValueConditional;
-				}
-				if(dpValueConditional > dMaxValueConditional) {
-					dMaxValueConditional = dpValueConditional;
-				}
+		if(dpValue < dpMinValue) {
+			dpMinValue = dpValue;
+			iAssociationType = i;
+		}
+	}
+	dMinValueConditional = MINPVALUE;
+	dMaxValueConditional = MAXPVALUE;
+	if(dpMinValue * dNumComparisons <= dCriticalPvalue) { // significant
+		this->setVariantSplit(viVariants);
+		isConditionalSignificant = true;
+		while(getNextVariantSplit(viVariantsLeft, viVariantsRight)) {
+			dpValueConditional = calculateConditionalChiSquare(viVariantsLeft, viVariantsRight,
+					vvviHyperGroup.at(iAssociationType));
+			// check if this conditional chi-square test is significant
+			if(dpValueConditional * dNumComparisons > dCriticalPvalue) { // non-significant
+				isConditionalSignificant = false;
+				break;
 			}
-			if(isConditionalSignificant) { // save this interaction
-				vInteractions.push_back(Interaction());
-				vInteractions.back().viInnerVariantIds = viVariants;
-				vInteractions.back().iAssociationType = i;
-				vInteractions.back().dpValue = dpValue;
-				vInteractions.back().dMaxpValueConditional = dMaxValueConditional;
-				vInteractions.back().dMinpValueConditional = dMinValueConditional;
+			if(dpValueConditional < dMinValueConditional) {
+				dMinValueConditional = dpValueConditional;
 			}
+			if(dpValueConditional > dMaxValueConditional) {
+				dMaxValueConditional = dpValueConditional;
+			}
+		}
+		if(isConditionalSignificant) { // save this interaction
+			vInteractions.push_back(Interaction());
+			vInteractions.back().viInnerVariantIds = viVariants;
+			vInteractions.back().iAssociationType = iAssociationType;
+			vInteractions.back().dpValue = dpMinValue;
+			vInteractions.back().dMaxpValueConditional = dMaxValueConditional;
+			vInteractions.back().dMinpValueConditional = dMinValueConditional;
 		}
 	}
 
@@ -103,9 +116,9 @@ vector<Interaction> & ConditionalChisquare::calculateSignificance() {
 void ConditionalChisquare::setVariants(vector<UINT32> & _viVariants) {
 	viVariants = _viVariants;
 	dNumComparisons = 1;
-		for(int i = 0;i < (int) _viVariants.size();++i) {
-			dNumComparisons *= (iTotalVariants - i) / (i + 1);
-		}
+	for(int i = 0;i < (int) _viVariants.size();++i) {
+		dNumComparisons *= (iTotalVariants - i) / (i + 1);
+	}
 }
 
 /**
@@ -164,7 +177,7 @@ double ConditionalChisquare::calculateConditionalChiSquare(vector<UINT32> & _viV
 		vector<UINT32> & _viVariantsRight, vector<vector<int>> & _vviAssociationTypes) {
 	double dChiSquare = 0;
 	this->collectPartialTablePerLevel(_viVariantsLeft, _viVariantsRight);
-	UINT32 iNum = umiiKeyTable.size(), i, j, k, g, s = _viVariantsLeft.size();
+	UINT32 iNum = umiiKeyTable.size(), i, j, k, g, s = _viVariantsRight.size();
 	UINT64 iKeyGiven, iKeyLeft, iKey;
 	unordered_map<UINT64, UINT32>::const_iterator itFrequency;
 	unordered_map<UINT64, UINT32>::const_iterator itLeftKeyFrequency;
@@ -172,12 +185,13 @@ double ConditionalChisquare::calculateConditionalChiSquare(vector<UINT32> & _viV
 	double dExpect, dExpectLeft, dExpectRight, dObserved;
 	double dNumRow = 0, dNumCol = 0, df = 0, dMinpValue = 100, dpValue;
 	for(i = 0;i < _vviAssociationTypes.size();++i) {
-		dNumRow = 0;
-		dNumCol = 0;
+		siLeftKeySet.clear();
+		siRightKeySet.clear();
 		for(j = 0;j < iNum;j++) {
 			dExpectLeft = 0;
 			dExpectRight = 0;
 			dExpect = 0;
+			dObserved = 0;
 			iKeyLeft = piKeyPairs[j * 2];
 			iKeyGiven = piKeyPairs[j * 2 + 1];
 			iKey = (iKeyLeft << (iMaxNumVariantTypes * s)) + iKeyGiven;
@@ -189,13 +203,13 @@ double ConditionalChisquare::calculateConditionalChiSquare(vector<UINT32> & _viV
 				dExpectLeft += pdLeftKeyFrequency[itLeftKeyFrequency->second * iNumGroups + g];
 				dExpectRight += pdRightKeyFrequency[itRightKeyFrequency->second * iNumGroups + g];
 				dExpect += vGroupSize.at(g);
-				dObserved += pdLeftKeyFrequency[itFrequency->second * iNumGroups + g];
+				dObserved += pdKeyFrequency[itFrequency->second * iNumGroups + g];
 			}
 			if(dExpectLeft != 0) {
-				dNumRow++;
+				siLeftKeySet.insert(iKeyLeft);
 			}
 			if(dExpectRight != 0) {
-				dNumCol++;
+				siRightKeySet.insert(iKeyGiven);
 			}
 			dExpect = (dExpectLeft * dExpectRight) / dExpect;
 			if(dExpect == 0) {
@@ -203,6 +217,8 @@ double ConditionalChisquare::calculateConditionalChiSquare(vector<UINT32> & _viV
 			}
 			dChiSquare += (dObserved - dExpect) * (dObserved - dExpect) / dExpect;
 		}
+		dNumRow = siLeftKeySet.size();
+		dNumCol = siRightKeySet.size();
 		df = (dNumRow - 1) * (dNumCol - 1);
 		dpValue = pValue(df, dChiSquare);
 		if(dpValue < dMinpValue) {
@@ -263,7 +279,7 @@ void ConditionalChisquare::collectPartialTablePerLevel(vector<UINT32> & _viVaria
 				++pdLeftKeyFrequency[itFrequency->second * iNumGroups + i];
 			}
 			// for the right key
-			itFrequency = umiiRightKeyTable.find(iKeyLeft);
+			itFrequency = umiiRightKeyTable.find(iKeyGiven);
 			if(itFrequency == umiiRightKeyTable.end()) {
 				umiiRightKeyTable[iKeyGiven] = idRightKeyFrequency;
 				++pdRightKeyFrequency[idRightKeyFrequency * iNumGroups + i];
@@ -308,7 +324,7 @@ bool ConditionalChisquare::getNextVariantSplit(vector<UINT32> & _viVariantsLeft,
 		_viVariantsLeft.clear();
 		_viVariantsRight.clear();
 		iCode++;
-		if(iCode > iCodeUpperBound) {
+		if(iCode >= iCodeUpperBound) {
 			return false;
 		}
 		if(siCodeSet.find(iCode) != siCodeSet.end()) {
@@ -318,10 +334,12 @@ bool ConditionalChisquare::getNextVariantSplit(vector<UINT32> & _viVariantsLeft,
 		}
 		int temp = iCode;
 		for(int i = 0;i < iCodeGroup;++i) {
-			if((temp & 2) == 0) { // to left
-				_viVariantsLeft.insert(_viVariantsLeft.end(), viVariants.begin() + i, viVariants.begin() + i + 1);
+			if((temp & 1) == 0) { // to left
+				_viVariantsLeft.push_back(viVariants.at(i));
+				// _viVariantsLeft.insert(_viVariantsLeft.end(), viVariants.begin() + i, viVariants.begin() + i + 1);
 			} else { // to right
-				_viVariantsRight.insert(_viVariantsLeft.end(), viVariants.begin() + i, viVariants.begin() + i + 1);
+				_viVariantsRight.push_back(viVariants.at(i));
+				// _viVariantsRight.insert(_viVariantsRight.end(), viVariants.begin() + i, viVariants.begin() + i + 1);
 			}
 			temp = temp >> 1;
 		}
@@ -335,7 +353,7 @@ bool ConditionalChisquare::getNextVariantSplit(vector<UINT32> & _viVariantsLeft,
 }
 
 void ConditionalChisquare::setVariantSplit(vector<UINT32> & _viVariants) {
-	iCode = 1;
+	iCode = 0;
 	siCodeSet.clear();
 	iCodeGroup = _viVariants.size();
 	iMask = pow(2, iCodeGroup) - 1;

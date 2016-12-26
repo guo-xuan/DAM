@@ -46,6 +46,9 @@ typedef int INT32;
 typedef unsigned long long UINT64;
 typedef long long INT64;
 
+#define MINPVALUE 10000
+#define MAXPVALUE -1
+
 class Config {
 public:
 	static vector<string> vsInputVariantFiles;

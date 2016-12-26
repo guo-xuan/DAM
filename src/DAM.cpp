@@ -45,15 +45,15 @@ int main(int argc, char **argv) {
 
 	//string sFileOut = "test.txt";
 	//gwasData->writeOutput(sFileOut);
-	/**
+
 	// set the gwas data in the config and also MCMC
 	MCMC::setupMCMC(gwasData);
 	// create chains
 	vector<MCMC *> vMcmc;
 	for(size_t i = 0;i < Config::iNumChains;i++) {
 		MCMC * pMcmc = new MCMC();
-		// pMcmc->initilizeMCMC();
-		pMcmc->test();
+		pMcmc->initilizeMCMC();
+		// pMcmc->test();
 		vMcmc.push_back(pMcmc);
 	}
 	//run chains
@@ -61,23 +61,24 @@ int main(int argc, char **argv) {
 		vMcmc.at(i)->runMCMC();
 	}
 	// sum up all the frequencies from all chains, choose the top 200 variants for next phase
-	vector<UINT32> viVariants = {1, 2, 3, 4, 5, 6};
+	// vector<UINT32> viVariants = {1, 2, 3, 4, 5, 6};
 
 	//free memory
-	delete gwasData;
 	for(size_t i = 0;i < Config::iNumChains;i++) {
 		delete vMcmc.at(i);
 	}
 
 	MCMC::destroyMCMC();
-	**/
-	vector<UINT32> viVariants = {1, 2, 3, 4, 5, 6};
+
+	vector<UINT32> viVariants = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 	// step-wise evaluation
 	AssociationEvaluation * pAssociationEvaluation = new AssociationEvaluation();
 	pAssociationEvaluation->initialize(viVariants, gwasData, Config::iMaxVariantsInInteraction);
 	pAssociationEvaluation->Evaluation();
 	string file_result = Config::sOutputFolder + "result.txt";
 	pAssociationEvaluation->WriteResults(file_result);
-	delete pAssociationEvaluation;
+	// delete pAssociationEvaluation;
+	// delete gwasData;
+	cout << "Done." << endl;
 	return 0;
 }

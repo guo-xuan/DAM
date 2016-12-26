@@ -46,6 +46,8 @@ MCMC::MCMC() {
 
 	iLogPosteriorSize = 2000;
 	iLogPosteriorIndex = 0;
+
+	logratio = 0;
 }
 
 MCMC::~MCMC() {

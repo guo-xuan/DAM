@@ -10,7 +10,9 @@
 AssociationEvaluation::AssociationEvaluation() {
 	iNumGroups = 0;
 	pData = NULL;
-
+	pgwasData = NULL;
+	iBatchSize = 0;
+	iTotalTesting = 0;
 }
 
 AssociationEvaluation::~AssociationEvaluation() {
@@ -18,6 +20,14 @@ AssociationEvaluation::~AssociationEvaluation() {
 		delete[] pData[j];
 	}
 	delete[] pData;
+}
+
+UINT32 combinatorial(double _n, double _x) {
+	double iNum = 1;
+	for(UINT32 i = 0;i < _x;++i) {
+		iNum *= (_n - i) / (i + 1);
+	}
+	return ((UINT32) iNum);
 }
 
 /**
@@ -58,13 +68,16 @@ void AssociationEvaluation::initialize(vector<UINT32> & _viVariants, GwasData * 
 		vChiSquareKits.push_back(ConditionalChisquare());
 		vChiSquareKits.back().initilize(iMaxInteractionSize, _gwasData, pData, iMaxNumVariantTypes);
 	}
+	for(UINT32 i = 0;i < iMaxInteractionSize;++i) {
+		iTotalTesting += combinatorial(iNumVariantCandidates, (i + 1));
+	}
 }
 
 /**
  * step-wisely try the association and interaction test
  */
 void AssociationEvaluation::Evaluation() {
-	UINT32 i = 0, j, iNum;
+	UINT32 i = 0, j, iNum, iCount = 0;
 
 	// start the interaction with 1 variant
 	vector<UINT32> vCombination;
@@ -98,6 +111,9 @@ void AssociationEvaluation::Evaluation() {
 					vInteractions.push_back(vi.at(l));
 				}
 			}
+			vInteractionCandidates.clear();
+			iCount += iNum;
+			cout << "Processing " << 100 * ((double) iCount) / ((double) iTotalTesting) << "% \r";
 		}
 	}
 }
@@ -116,16 +132,22 @@ void AssociationEvaluation::WriteResults(string & _sFilename) {
 		for(j = 0;j < (int) vvviHyperGroup.at(vInteractions.at(i).iAssociationType).size();++j) {
 			outputFile << "( ";
 			for(k = 0;k < (int) vvviHyperGroup.at(vInteractions.at(i).iAssociationType).at(j).size();++k) {
-				outputFile
-						<< pgwasData->viGroupNamesSet.at(
-								vvviHyperGroup.at(vInteractions.at(i).iAssociationType).at(j).at(k)) << " ";
+				outputFile << vvviHyperGroup.at(vInteractions.at(i).iAssociationType).at(j).at(k) << " ";
 			}
 			outputFile << ") ";
 		}
 		outputFile << endl;
 		outputFile << "\tP Value: " << vInteractions.at(i).dpValue << endl;
-		outputFile << "\tMinimum Conditional P Value: " << vInteractions.at(i).dMinpValueConditional << endl;
-		outputFile << "\tMaximum Conditional P Value: " << vInteractions.at(i).dMaxpValueConditional << endl;
+		if(vInteractions.at(i).dMinpValueConditional == MINPVALUE) {
+			outputFile << "\tMinimum Conditional P Value: NA" << endl;
+		} else {
+			outputFile << "\tMinimum Conditional P Value: " << vInteractions.at(i).dMinpValueConditional << endl;
+		}
+		if(vInteractions.at(i).dMaxpValueConditional == MAXPVALUE) {
+			outputFile << "\tMaximum Conditional P Value: NA" << endl;
+		} else {
+			outputFile << "\tMaximum Conditional P Value: " << vInteractions.at(i).dMaxpValueConditional << endl;
+		}
 		outputFile << endl;
 	}
 	outputFile.close();
@@ -158,11 +180,13 @@ bool AssociationEvaluation::combinationGenerator(int _iSize, int _iNumCandidate,
 			}
 		}
 		_vInteraction.push_back(Interaction());
+
 		for(i = 0;i < _iSize;++i) {
 			_vInteraction.back().viInnerVariantIds.push_back(_vCombination.at(i));
-			cout << _vCombination.at(i) << "\t";
+			// cout << _vCombination.at(i) << "\t";
 		}
-		cout << endl;
+		// cout << endl;
+
 		--_iBatchSize;
 	}
 	return true;
